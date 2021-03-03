@@ -1,0 +1,30 @@
+{
+  "name": "webservice",
+  "version": "1.0.0",
+  "description": "This web service distributes data crawled by crawlers to users.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hunghnUIT/webServiceOnlineAssistant.git"
+  },
+  "keywords": [
+    "web",
+    "service",
+    "api",
+    "nodejs"
+  ],
+  "author": "Hung Hoang",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hunghnUIT/webServiceOnlineAssistant/issues"
+  },
+  "homepage": "https://github.com/hunghnUIT/webServiceOnlineAssistant#readme",
+  "dependencies": {
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "nodemon": "^2.0.7"
+  }
+}
