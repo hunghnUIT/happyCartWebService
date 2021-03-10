@@ -7,14 +7,25 @@ const helmet = require('helmet');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 const cors = require('cors');
+const errorHandler = require('./middlewares/errorHandler');
+const multer = require('multer');
+
+const userRoute = require('./routes/user');
+
+const connectDB = require('./config/db');
 
 // Load env
 dotenv.config({path: './config/config.env'})
 
+// Connect to DB
+connectDB();
+
 const app = express();
 
 // Body Parser
-app.use(express.json());
+app.use(express.json()); // for parsing application/json
+app.use(express.urlencoded({extended: true})); // for parsing application/x-www-form-urlencoded
+app.use(multer().array()); // for parsing application/form-data
 
 // Cookie Parser
 app.use(cookieParser());
@@ -39,8 +50,10 @@ if(process.env.NODE_ENV === 'development'){
     app.use(morgan('dev'));
 }
 
-// app.use("/api/v1/",);
+app.use("/api/v1/users/", userRoute);
 
+
+app.use(errorHandler);
 
 
 const PORT = process.env.PORT || 5000;

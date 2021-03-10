@@ -11,7 +11,7 @@ const UserSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        // required: [true, 'Please add an phone number'],
+        required: [true, 'Please add an phone number'],
         unique: true,
         match: [
             /((09|03|07|08|05)+([0-9]{8})\b)/g,
@@ -27,16 +27,25 @@ const UserSchema = new mongoose.Schema({
             'Please add a valid email'
         ]
     },
+    // /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
     password: {
         type: String,
         required: [true, 'Please add a password'],
         minlength: 6,
-        select: false
+        select: false,
+        // match: [
+        //     /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
+        //     'Password must contain at least 8 characters, 1 number, 1 upper and 1 lowercase'
+        // ]
+    },
+    isAdmin: {
+        type: Boolean,
+        default: false,
     },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     createdAt: {
-        type: Date,
+        type: Number,
         default: Date.now
     }
 });
