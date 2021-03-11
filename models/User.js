@@ -27,16 +27,15 @@ const UserSchema = new mongoose.Schema({
             'Please add a valid email'
         ]
     },
-    // /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/
     password: {
         type: String,
         required: [true, 'Please add a password'],
         minlength: 6,
         select: false,
-        // match: [
-        //     /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/,
-        //     'Password must contain at least 8 characters, 1 number, 1 upper and 1 lowercase'
-        // ]
+        match: [
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/,
+            'Password must contain at least 8 characters, 1 number, 1 upper and 1 lowercase'
+        ]
     },
     isAdmin: {
         type: Boolean,
@@ -69,13 +68,13 @@ UserSchema.methods.getAccessToken = function () {
 // Sign JWT and return 
 UserSchema.methods.getRefreshToken = function () {
     return jwt.sign({id: this._id} , process.env['JWT_SECRET_FOR_REFRESH'], {
-        expiresIn: settings.JWT_EXPIRE
+        expiresIn: settings.JWT_EXPIRE_FOR_REFRESH
     })
 }
 
 // Check match password
 UserSchema.methods.matchPassword = async function (enteredPassword) {
-    return await bcrypt.compare(this.password, enteredPassword);
+    return await bcrypt.compare(enteredPassword, this.password);
 }
 
 // Generate and hash password token
@@ -87,7 +86,7 @@ UserSchema.methods.getResetPasswordToken = function () {
     this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     // Set expires
-    this.resetPasswordExpire = Date.now() + 10*60*1000; // in ms
+    this.resetPasswordExpire = Date.now() + 10*60*1000; // in ms, 10 mins
 
     return resetToken;
 };

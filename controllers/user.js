@@ -32,7 +32,7 @@ exports.getUsers = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @description Get all users
+ * @description Create a new user
  * @route POST /api/v1/users/
  * @access private/admin
  */
@@ -45,8 +45,8 @@ exports.createUser = asyncHandler(async (req, res, next) => {
     return res.status(201).json({
         success: true,
         data: user,
-        accessToken: user.getAccessToken(),
-        refreshToken: user.getRefreshToken(),
+        // accessToken: user.getAccessToken(),
+        // refreshToken: user.getRefreshToken(),
     });
 });
 

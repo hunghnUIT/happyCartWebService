@@ -11,6 +11,7 @@ const errorHandler = require('./middlewares/errorHandler');
 const multer = require('multer');
 
 const userRoute = require('./routes/user');
+const authRoute = require('./routes/auth');
 
 const connectDB = require('./config/db');
 
@@ -51,6 +52,7 @@ if(process.env.NODE_ENV === 'development'){
 }
 
 app.use("/api/v1/users/", userRoute);
+app.use("/api/v1/auth/", authRoute);
 
 
 app.use(errorHandler);

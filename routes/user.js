@@ -4,10 +4,10 @@ const router = express.Router();
 
 const { getUser, getUsers, createUser, updateUser, deleteUser } = require('../controllers/user');
 
-// const { protect, authorize } = require('../middlewares/auth');
+const { protect, authorize } = require('../middlewares/auth');
 
-// router.use(protect);
-// router.use(authorize('admin'));
+router.use(protect);
+router.use(authorize('admin'));
 
 router
     .route('/')
