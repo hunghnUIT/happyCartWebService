@@ -113,11 +113,10 @@ const sendTokenResponse = (user, statusCode, res, refToken)=>{
 
 /**
  * @description change password for user 
- * @route   GET /api/v1/auth/logout
+ * @route   PUT /api/v1/auth/change-password
  * @access  private
  */
 exports.changePassword = asyncHandler(async (req, res, next) => {
-
     const { currentPassword, newPassword } = req.body;
 
     let user = await User.findById(req.user.id).select('+password');
@@ -138,6 +137,28 @@ exports.changePassword = asyncHandler(async (req, res, next) => {
     user = await user.save();
 
     sendTokenResponse(user, 200, res);
+});
+
+/**
+ * @description Update detail account
+ * @route   PUT /api/v1/auth/update-account
+ * @access  private
+ */
+exports.updateAccount = asyncHandler(async (req, res, next) => {
+    // Only allow to edit fields bellow.
+    const fieldsToUpdate = {
+        name: req.body.name,
+        email: req.body.email
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+        new: true,
+        runValidators: true
+    });
+    return res.status(200).json({
+        success: true,
+        data: user
+    });
 });
 
 /**

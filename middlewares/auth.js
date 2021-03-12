@@ -6,7 +6,7 @@ const ErrorResponse = require('../utils/errorResponse');
 exports.protect = asyncHandler(async (req, res, next)=>{
     let token;
 
-    if(req.headers.authorization && req.headers.authorization.statsWith("Bearer"))
+    if(req.headers.authorization && req.headers.authorization.startsWith("Bearer"))
         token = req.headers.authorization.replace("Bearer ", "");
     else if(req.cookies.accessToken)
         token = req.cookies.accessToken;
