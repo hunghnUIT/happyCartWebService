@@ -6,7 +6,7 @@ const mongooseOption = {
     useUnifiedTopology: true
 };
 
-const DB = 'MONGO_URI_LOCAL';
+const DB = 'MONGO_URI_CLOUD';
 
 const connectDB = () => {
     mongoose.connect(process.env[DB], mongooseOption, (error)=>{
