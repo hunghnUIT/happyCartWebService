@@ -32,7 +32,7 @@ exports.processUrl = (url) => {
         let splittedUrlByDash = url.split('-');
 
         result['itemId'] = Number((splittedUrlByDash[splittedUrlByDash.length - 1]).replace('p', ''));
-        result['sellerId'] = 0;
+        result['sellerId'] = 1;
     }
 
     return result;
