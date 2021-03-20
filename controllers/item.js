@@ -16,24 +16,38 @@ const { HEADERS_SHOPEE, HEADERS_TIKI } = require('../settings');
 exports.getItemInfo = asyncHandler(async (req, res, next)=>{
     const platform = req.query.platform;
     const id = Number(req.params.itemId);
+    const include = req.query.include || "";
+    const response = {};
     if(!platform || !id)
         return next(new ErrorResponse(`Invalid ${!id ? 'item id,' : '' } ${!platform ? 'platform' : '' }`, 400));
+    
     let item; 
     let itemPrices = [];
     
     if(platform.toLowerCase() === 'tiki'){
-        item = await ItemTiki.findOne({id: id}, '-_id -__v');
-        itemPrices = await ItemPriceTiki.find({itemId: id}, '-_id -__v');
+        if(include.includes('item')){
+            item = await ItemTiki.findOne({id: id}, '-_id -__v');
+            response['item'] = item;
+        }
+        if(include.includes('price')){
+            itemPrices = await ItemPriceTiki.find({itemId: id}, '-_id -__v');
+            response['price'] = itemPrices;
+        }
     }
     else if(platform.toLowerCase() === 'shopee'){
-        item = await ItemShopee.findOne({id: id}, '-_id -__v');
-        itemPrices = await ItemPriceShopee.find({itemId: id}, '-_id -__v');
+        if(include.includes('item')){
+            item = await ItemShopee.findOne({id: id}, '-_id -__v');
+            response['item'] = item;
+        }
+        if(include.includes('price')){
+            itemPrices = await ItemPriceShopee.find({itemId: id}, '-_id -__v');
+            response['price'] = itemPrices;
+        }
     }
-    res.status(200).json({
-        success: true,
-        item: item,
-        price: itemPrices
-    });
+
+    response['success'] = true;
+
+    res.status(200).json(response);
 });
 
 
