@@ -6,20 +6,28 @@ const ItemShopee = require('../models/ItemShopee');
 const ItemPriceShopee = require('../models/ItemPriceShopee');
 const { HEADERS_SHOPEE, HEADERS_TIKI } = require('../settings');
 const ErrorResponse = require('../utils/errorResponse');
+const { crawlItemShopee, crawlItemTiki } = require('../helpers/helper');
 
 /** 
  * @description Get data of item
- * @param {Number} id id of item
+ * @param {Number} itemId id of item
+ * @param {Number} sellerId id of item
  * @param {String} platform platform of item
  * @returns Promise Model Item
  */
-exports.getItem = async (id, platform) => {
+exports.getItem = async (itemId, sellerId, platform) => {
     let item;
     if(platform.toLowerCase() === 'tiki'){
-        item = await ItemTiki.findOne({id: id}, '-_id -__v');
+        item = await ItemTiki.findOne({id: itemId}, '-_id -__v -expired');
+        // If item is not in DB then crawl it.
+        if(!item)
+            item = await crawlItemTiki(itemId);
     }
     else if(platform.toLowerCase() === 'shopee'){
-        item = await ItemShopee.findOne({id: id}, '-_id -__v');
+        item = await ItemShopee.findOne({id: itemId}, '-_id -__v -expired');
+        // If item is not in DB then crawl it.
+        if(!item)
+            item = await crawlItemShopee(itemId, sellerId);
     }
     return item;
 };

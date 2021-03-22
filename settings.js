@@ -22,9 +22,15 @@ const HEADERS_TIKI = {
     'Accept-Language':' en-US,en;q=0.9',
 }
 
+const URL_API_ITEM_SHOPEE = 'https://shopee.vn/api/v2/item/get?itemid={item_id}&shopid={seller_id}&fbclid=-';
+const URL_API_ITEM_TIKI = 'https://tiki.vn/api/v2/products/{item_id}';
+
+
 module.exports = {
     JWT_EXPIRE,
     JWT_EXPIRE_FOR_REFRESH,
     HEADERS_SHOPEE,
     HEADERS_TIKI,
+    URL_API_ITEM_SHOPEE,
+    URL_API_ITEM_TIKI
 }

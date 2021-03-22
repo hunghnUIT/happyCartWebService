@@ -19,7 +19,9 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
     let dataFromUrl = processUrl(url);
 
     if(include.includes('item')){
-        item = await getItem(dataFromUrl['itemId'], dataFromUrl['platform']);
+        item = await getItem(dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform']);
+        if(!item.productUrl)
+            item.productUrl = url;
         response['item'] = item;
     }
     if(include.includes('price')){
@@ -27,7 +29,7 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
         response['prices'] = prices;
     }
     if(include.includes('seller')){
-        seller = await getSeller(dataFromUrl['sellerId'], dataFromUrl['platform']);
+        seller = await getSeller(dataFromUrl['sellerId'] || item['sellerId'], dataFromUrl['platform']);
         response['seller'] = seller;
     }
     
