@@ -181,3 +181,32 @@ exports.logout = asyncHandler(async (req, res, next) => {
         data: {}
     });
 })
+
+/**
+ * @description get tracking items by user 
+ * @route   GET /api/v1/auth/tracking-items
+ * @access  private/protected
+ */
+exports.trackingItems = asyncHandler(async (req, res, next) => {
+    
+    
+    return res.status(200).json({
+        success: true,
+        data: {}
+    });
+})
+
+/**
+ * @description tracking a new item  
+ * @route   POST /api/v1/auth/tracking-items/:itemId?platform=...
+ * @access  private/protected
+ */
+exports.trackingNewItem = asyncHandler(async (req, res, next) => {
+    const itemId = req.params.itemId;
+    const platform = req.query.platform;
+    
+    return res.status(200).json({
+        success: true,
+        data: {}
+    });
+})

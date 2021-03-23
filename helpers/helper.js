@@ -24,11 +24,20 @@ exports.processUrl = (url) => {
         result['platform'] = 'tiki';
 
     if(result['platform'] === 'shopee'){
+        // E.g: https://shopee.vn/product/283338743/9918567180 // Shop id first, then item id
+        if(url.includes('shopee.vn/product/')){
+            let splittedUrlBySlash = url.split('/');
+    
+            result['itemId'] = Number(splittedUrlBySlash[splittedUrlBySlash.length - 1]);
+            result['sellerId'] = Number(splittedUrlBySlash[splittedUrlBySlash.length - 2]);
+        }
         // E.g: https://shopee.vn/bach-tuoc-cam-xuc-2-mat-cam-xuc-do-choi-bach-tuoc-co-the-dao-nguoc-tam-trang-bach-tuoc-sang-trong-i.283338743.9918567180 //id shop first, then id item
-        let splittedUrlByDot = url.split('.');
-
-        result['itemId'] = Number(splittedUrlByDot[splittedUrlByDot.length - 1]);
-        result['sellerId'] = Number(splittedUrlByDot[splittedUrlByDot.length - 2]);
+        else{
+            let splittedUrlByDot = url.split('.');
+    
+            result['itemId'] = Number(splittedUrlByDot[splittedUrlByDot.length - 1]);
+            result['sellerId'] = Number(splittedUrlByDot[splittedUrlByDot.length - 2]);
+        }
     }
     else if(result['platform'] === 'tiki'){
         // E.g: https://tiki.vn/dien-thoai-iphone-12-pro-max-128gb-hang-chinh-hang-p70771651.html?src=ss-organic
