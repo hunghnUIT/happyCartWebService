@@ -13,19 +13,25 @@ const { crawlItemShopee, crawlItemTiki } = require('../helpers/helper');
  * @param {Number} itemId id of item
  * @param {Number} sellerId id of item
  * @param {String} platform platform of item
+ * @param {Boolean} getPreviewImages get preview images or not
  * @returns Promise Model Item
  */
-exports.getItem = async (itemId, sellerId, platform) => {
+exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
     let item;
     if(platform.toLowerCase() === 'tiki'){
-        item = await ItemTiki.findOne({id: itemId}, '-_id -__v -expired');
-        // If item is not in DB then crawl it.
-        if(!item)
+        // if client don't want to preview images, try looking for item in DB first, there's no preview img in there.
+        if(!getPreviewImages)
+            item = await ItemTiki.findOne({id: itemId}, '-_id -__v -expired');
+
+        // If item is not in DB or items on Tiki not having seller id or client want to preview images then crawl it.
+        if(!item || !item['_doc']['sellerId'])
             item = await crawlItemTiki(itemId);
     }
     else if(platform.toLowerCase() === 'shopee'){
-        item = await ItemShopee.findOne({id: itemId}, '-_id -__v -expired');
-        // If item is not in DB then crawl it.
+        if(!getPreviewImages)
+            item = await ItemShopee.findOne({id: itemId}, '-_id -__v -expired');
+        
+        // If item is not in DB or client want to preview images then crawl it.
         if(!item)
             item = await crawlItemShopee(itemId, sellerId);
     }
@@ -54,9 +60,11 @@ exports.getPrices = async (itemId, platform) => {
  * @param {Number} id id of seller
  * @param {String} platform platform of seller
  * @returns Promise Object seller
- * @note NOT FOUND SELLER WILL THROW ERROR. Should I?
  */
 exports.getSeller = async (id, platform) => {
+    if(id === -1)
+        return 'No seller selling this item'; //This item is no longer be sold (found this on tiki only).
+
     let response;
     let url;
     let config;
@@ -73,29 +81,36 @@ exports.getSeller = async (id, platform) => {
     try {
         response = (await axios.get(url, config))['data'];
 
-        if(response['error'] || !response['data']){
-            if(response['error']?.['code'] >= 400){ //tiki 404 error
-                if(response['error']?.['code'] === 404)
-                    throw (new ErrorResponse(`Shop id ${id} not found`, 404));
+        // if(response['error'] || !response['data']){
+        //     if(response['error']?.['code'] >= 400){ //tiki 404 error
+        //         if(response['error']?.['code'] === 404)
+        //             throw (new ErrorResponse(`Shop id ${id} not found`, 404));
                 
-                throw (new ErrorResponse('Bad request', 400));
-            }
-            else if(response['error'] === 4){ // shopee 404 error 
-                if(response['error_msg'] === 'shop not found'){
-                    throw (new ErrorResponse(`Shop id ${id} not found`, 404));
-                }
-                throw (new ErrorResponse('Bad request', 400));
-            }
-            else if(response['error'] === 5 || response['error']?.['code'] >= 500){
-                throw (new ErrorResponse(`${platform} server error`, 500));
-            }
-            else{
-                throw (new ErrorResponse(`Internal server error`, 500));
-            }
-        }
+        //         throw (new ErrorResponse('Bad request', 400));
+        //     }
+        //     else if(response['error'] === 4){ // shopee 404 error 
+        //         if(response['error_msg'] === 'shop not found'){
+        //             throw (new ErrorResponse(`Shop id ${id} not found`, 404));
+        //         }
+        //         throw (new ErrorResponse('Bad request', 400));
+        //     }
+        //     else if(response['error'] === 5 || response['error']?.['code'] >= 500){
+        //         throw (new ErrorResponse(`${platform} server error`, 500));
+        //     }
+        //     else{
+        //         throw (new ErrorResponse(`Internal server error`, 500));
+        //     }
+        // }
     } catch (error) {
-        throw (new ErrorResponse(error.message, error.response?.status || error?.code || 500));
+        // throw (new ErrorResponse(error.message, error.response?.status || error?.code || 500));
+        console.log(error.message);
+        return error.response.status === 404 ? `Not found seller id ${id}` : error.message;
     }
+
+    if(response.error_msg === 'shop not found')
+        return `Not found seller id ${id}`;
+    else if(!response['data'])
+        return null;
     
     return collectSellerData(response['data'], platform);
 };
@@ -142,4 +157,21 @@ const collectSellerData = (data, platform) => {
     }
 
     return seller;
+};
+
+/**
+ * @note This function is used for Tiki platform only by now.
+ * @description Update field sellerId in ItemTiki.
+ * @param {Number} itemId Id of item about to crawl
+ * @param {Number} sellerId Id seller of item about to crawl
+ */
+exports.updateSellerId = async (itemId, sellerId) => {
+    await ItemTiki.findOneAndUpdate({id: itemId}, {sellerId: sellerId}, { upsert: false }, (err, doc)=>{
+        if(err){
+            console.log(err.message);
+        }
+        else{
+            process.env.NODE_ENV === 'development' && console.log(`Update seller to item ${itemId}`);
+        }
+    });
 };

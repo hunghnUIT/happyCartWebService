@@ -1,6 +1,6 @@
 const axios = require('axios');
 const { URL_API_ITEM_SHOPEE, URL_API_ITEM_TIKI } = require('../settings');
-const { HEADERS_SHOPEE, HEADERS_TIKI } = require('../settings');
+const { HEADERS_SHOPEE, HEADERS_TIKI, URL_FILE_SERVER_SHOPEE } = require('../settings');
 
 /** 
  * @description round a float number to human readable
@@ -56,14 +56,15 @@ exports.crawlItemTiki = async (itemId) => {
         id: response['id'],
         name: response['name'],
         categoryId: response['categories']?.['id'] ? response['categories']['id'] : "unknown",
-        sellerId: response['current_seller']['id'],
+        sellerId: response['current_seller']?.['id'] ? response['current_seller']['id'] : -1,
         rating: response['rating_average'],
-        stock: response['stock_item']['qty'],
+        stock: response['stock_item']?.['qty'] ? response['stock_item']['qty']: 0,
         productUrl: `https://tiki.vn/${response['url_path']}`,
         thumbnailUrl: response['thumbnail_url'],
         totalReview: response['review_count'],
         currentPrice: parseInt(response['price']),
         platform: 'tiki',
+        previewImages: response['images'],
     }
 };
 
@@ -89,5 +90,6 @@ exports.crawlItemShopee = async (itemId, sellerId) => {
         totalReview: item['cmt_count'],
         currentPrice: parseInt(item['price_min']) / 100000,
         platform: 'shopee',
+        previewImages: item['images'].map((el)=> URL_FILE_SERVER_SHOPEE + el),
     };
 };

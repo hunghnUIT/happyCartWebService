@@ -19,17 +19,17 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
     let dataFromUrl = processUrl(url);
 
     if(include.includes('item')){
-        item = await getItem(dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform']);
-        if(!item.productUrl)
-            item.productUrl = url;
-        response['item'] = item;
+        item = await getItem(dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform'], include.includes('image'));
+        response['item'] = item['_doc'] || item; // _doc is where the data actually is in case it queried from DB.
+        if(!response.item.productUrl)
+            response.item.productUrl = url;
     }
     if(include.includes('price')){
         prices = await getPrices(dataFromUrl['itemId'], dataFromUrl['platform']);
         response['prices'] = prices;
     }
     if(include.includes('seller')){
-        seller = await getSeller(dataFromUrl['sellerId'] || item['sellerId'], dataFromUrl['platform']);
+        seller = await getSeller(dataFromUrl['sellerId'] || response.item['sellerId'], dataFromUrl['platform']);
         response['seller'] = seller;
     }
     

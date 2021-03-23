@@ -25,6 +25,8 @@ const HEADERS_TIKI = {
 const URL_API_ITEM_SHOPEE = 'https://shopee.vn/api/v2/item/get?itemid={item_id}&shopid={seller_id}&fbclid=-';
 const URL_API_ITEM_TIKI = 'https://tiki.vn/api/v2/products/{item_id}';
 
+const URL_FILE_SERVER_SHOPEE = 'https://cf.shopee.vn/file/';
+
 
 module.exports = {
     JWT_EXPIRE,
@@ -32,5 +34,6 @@ module.exports = {
     HEADERS_SHOPEE,
     HEADERS_TIKI,
     URL_API_ITEM_SHOPEE,
-    URL_API_ITEM_TIKI
+    URL_API_ITEM_TIKI,
+    URL_FILE_SERVER_SHOPEE,
 }
