@@ -46,13 +46,14 @@ exports.processUrl = (url) => {
 /**
  * @description Crawl Tiki item using the same way with crawler.
  * @param {Number} itemId Id of item about to crawl
+ * @param {Boolean} getPreviewImages get preview images or not
  */
-exports.crawlItemTiki = async (itemId) => {
+exports.crawlItemTiki = async (itemId, getPreviewImages) => {
     let endpoint = URL_API_ITEM_TIKI; 
     endpoint = endpoint.replace('{item_id}', itemId);
     
     const response = (await axios.get(endpoint, { headers: HEADERS_TIKI }))['data'];
-    return {
+    const result = {
         id: response['id'],
         name: response['name'],
         categoryId: response['categories']?.['id'] ? response['categories']['id'] : "unknown",
@@ -64,23 +65,27 @@ exports.crawlItemTiki = async (itemId) => {
         totalReview: response['review_count'],
         currentPrice: parseInt(response['price']),
         platform: 'tiki',
-        previewImages: response['images'],
     }
+    if(getPreviewImages)
+        result['previewImages'] = response['images'];
+
+    return result;
 };
 
 /**
  * @description Crawl Shopee item using the same way with crawler.
  * @param {Number} itemId Id of item about to crawl
  * @param {Number} sellerId Id seller of item about to crawl
+ * @param {Boolean} getPreviewImages get preview images or not
  */
-exports.crawlItemShopee = async (itemId, sellerId) => {
+exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
     let endpoint = URL_API_ITEM_SHOPEE;
     endpoint = endpoint.replace('{item_id}', itemId);
     endpoint = endpoint.replace('{seller_id}', sellerId);
     
     const response = (await axios.get(endpoint, { headers: HEADERS_SHOPEE }))['data'];
     const item = response['item'];
-    return {
+    const result = {
         id: item['itemid'],
         name: item['name'],
         sellerId: item['shopid'],
@@ -90,6 +95,9 @@ exports.crawlItemShopee = async (itemId, sellerId) => {
         totalReview: item['cmt_count'],
         currentPrice: parseInt(item['price_min']) / 100000,
         platform: 'shopee',
-        previewImages: item['images'].map((el)=> URL_FILE_SERVER_SHOPEE + el),
     };
+    if(getPreviewImages)
+        result['previewImages'] = item['images'].map((el)=> URL_FILE_SERVER_SHOPEE + el);
+    
+    return result;
 };

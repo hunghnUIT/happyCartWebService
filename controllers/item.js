@@ -1,7 +1,7 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 const ErrorResponse = require('../utils/errorResponse');
 const { processUrl } = require('../helpers/helper');
-const { getItem, getSeller, getPrices } = require('../services/item')
+const { getItem, getSeller, getPrices } = require('../services/service')
 
 /**
  * @description Get info by processing item's url, not being declared in "include" won't be returned.
