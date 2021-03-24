@@ -6,6 +6,7 @@ const ItemShopee = require('../models/ItemShopee');
 const ItemPriceShopee = require('../models/ItemPriceShopee');
 const { HEADERS_SHOPEE, HEADERS_TIKI } = require('../settings');
 const { crawlItemShopee, crawlItemTiki } = require('../helpers/helper');
+const ErrorResponse = require('../utils/errorResponse');
 
 /** 
  * @description Get data of item
@@ -23,7 +24,7 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
             item = await ItemTiki.findOne({id: itemId}, '-_id -__v -expired');
 
         // If item is not in DB or items on Tiki not having seller id or client want to preview images then crawl it.
-        if(!item || !item['_doc']['sellerId'])
+        if(!item || !item['_doc']?.['sellerId'])
             item = await crawlItemTiki(itemId, getPreviewImages);
     }
     else if(platform.toLowerCase() === 'shopee'){
@@ -31,8 +32,13 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
             item = await ItemShopee.findOne({id: itemId}, '-_id -__v -expired');
         
         // If item is not in DB or client want to preview images then crawl it.
-        if(!item)
+        if(!item){
+            // Crawling Shopee item needs seller id too.
+            if(!sellerId)
+                throw new ErrorResponse('Seller id params is required along with Shopee items');
+
             item = await crawlItemShopee(itemId, sellerId, getPreviewImages);
+        }
     }
     return item;
 };

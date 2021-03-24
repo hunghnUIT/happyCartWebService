@@ -21,8 +21,7 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
     if(include.includes('item')){
         item = await getItem(dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform'], include.includes('image'));
         response['item'] = item['_doc'] || item; // _doc is where the data actually is in case it queried from DB.
-        if(!response.item.productUrl)
-            response.item.productUrl = url;
+        
     }
     if(include.includes('price')){
         prices = await getPrices(dataFromUrl['itemId'], dataFromUrl['platform']);
@@ -40,19 +39,21 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
 
 /**
  * @description Get info item and it's price history
- * @route PUT /api/v1/items/:itemId?platform=...&include=item,price
+ * @route PUT /api/v1/items/:itemId?platform=...&include=item,price&seller=...
+ * @note seller params is required when crawling Shopee item (item does not exist in DB).
  * @access public
  */
 exports.getItemInfo = asyncHandler(async (req, res, next)=>{
     const platform = req.query.platform;
     const id = Number(req.params.itemId);
+    const sellerId = req.query.seller;
     const include = req.query.include || "";
     const response = {};
     if(!platform || !id)
         return next(new ErrorResponse(`Invalid ${!id ? 'item id,' : '' } ${!platform ? 'platform' : '' }`, 400));
     
     if(include.includes('item')){
-        response['item'] = await getItem(id, platform);
+        response['item'] = await getItem(id, sellerId, platform);
     }
     if(include.includes('price')){
         response['price'] = await getPrices(id, platform);

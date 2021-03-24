@@ -26,7 +26,8 @@ exports.processUrl = (url) => {
     if(result['platform'] === 'shopee'){
         // E.g: https://shopee.vn/product/283338743/9918567180?smtt=0.174867900-1616510545.9 // Shop id first, then item id
         if(url.includes('shopee.vn/product/')){
-            url = url.slice(0, url.indexOf('?'));
+            if(url.indexOf('?') > -1)
+                url = url.slice(0, url.indexOf('?'));
             let splittedUrlBySlash = url.split('/');
     
             result['itemId'] = Number(splittedUrlBySlash[splittedUrlBySlash.length - 1]);
@@ -63,22 +64,27 @@ exports.crawlItemTiki = async (itemId, getPreviewImages) => {
     endpoint = endpoint.replace('{item_id}', itemId);
     
     const response = (await axios.get(endpoint, { headers: HEADERS_TIKI }))['data'];
-    const result = {
-        id: response['id'],
-        name: response['name'],
-        categoryId: response['categories']?.['id'] ? response['categories']['id'] : "unknown",
-        sellerId: response['current_seller']?.['id'] ? response['current_seller']['id'] : -1,
-        rating: response['rating_average'],
-        stock: response['stock_item']?.['qty'] ? response['stock_item']['qty']: 0,
-        productUrl: `https://tiki.vn/${response['url_path']}`,
-        thumbnailUrl: response['thumbnail_url'],
-        totalReview: response['review_count'],
-        currentPrice: parseInt(response['price']),
-        platform: 'tiki',
+    let result = {}
+    if(response){
+        result = {
+            id: response['id'],
+            name: response['name'],
+            categoryId: response['categories']?.['id'] ? response['categories']['id'] : "unknown",
+            sellerId: response['current_seller']?.['id'] ? response['current_seller']['id'] : -1,
+            rating: response['rating_average'],
+            stock: response['stock_item']?.['qty'] ? response['stock_item']['qty']: 0,
+            productUrl: `https://tiki.vn/${response['url_path']}`,
+            thumbnailUrl: response['thumbnail_url'],
+            totalReview: response['review_count'],
+            currentPrice: parseInt(response['price']),
+            platform: 'tiki',
+        }
+        if(getPreviewImages)
+            result['previewImages'] = response['images'];
     }
-    if(getPreviewImages)
-        result['previewImages'] = response['images'];
-
+    else
+        return `Not found item id ${itemId}`;
+    
     return result;
 };
 
@@ -95,19 +101,25 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
     
     const response = (await axios.get(endpoint, { headers: HEADERS_SHOPEE }))['data'];
     const item = response['item'];
-    const result = {
-        id: item['itemid'],
-        name: item['name'],
-        sellerId: item['shopid'],
-        categoryId: item['categories'][0]['catid'],
-        rating: item['item_rating']['rating_star'],
-        thumbnailUrl: `https://cf.shopee.vn/file/${item['image']}`,
-        totalReview: item['cmt_count'],
-        currentPrice: parseInt(item['price_min']) / 100000,
-        platform: 'shopee',
-    };
-    if(getPreviewImages)
-        result['previewImages'] = item['images'].map((el)=> URL_FILE_SERVER_SHOPEE + el);
+    let result = {};
+    if(item){
+        result = {
+            id: item['itemid'],
+            name: item['name'],
+            sellerId: item['shopid'],
+            categoryId: item['categories'][0]['catid'],
+            rating: item['item_rating']['rating_star'],
+            productUrl: `https://shopee.vn/product/${item['shopid']}/${item['itemid']}`,
+            thumbnailUrl: `https://cf.shopee.vn/file/${item['image']}`,
+            totalReview: item['cmt_count'],
+            currentPrice: parseInt(item['price_min']) / 100000,
+            platform: 'shopee',
+        };
+        if(getPreviewImages)
+            result['previewImages'] = item['images'].map((el)=> URL_FILE_SERVER_SHOPEE + el);
+    }
+    else
+        return `Not found item id ${itemId} belong to shop ${sellerId}`;
     
     return result;
 };
