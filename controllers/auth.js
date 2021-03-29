@@ -2,6 +2,10 @@ const User = require('../models/User');
 const asyncHandler = require('../middlewares/asyncHandler');
 const ErrorResponse = require('../utils/errorResponse');
 const jwt = require('jsonwebtoken');
+const TrackedItemTiki = require('../models/TrackedItemTiki');
+const TrackedItemShopee = require('../models/TrackedItemShopee');
+const ItemTiki = require('../models/ItemTiki');
+const ItemShopee = require('../models/ItemShopee');
 
 /**
  * @description Register user
@@ -46,14 +50,42 @@ exports.login = asyncHandler(async (req, res, next)=>{
 
 /**
  * @description view my account
- * @route   GET /api/v1/auth/my-account
+ * @route   GET /api/v1/auth/my-account?include=item
  * @access  private
  */
 exports.myAccount = asyncHandler(async(req, res, next)=>{
-    const user = await User.findById(req.user._id);
+    // NOTE: Look like query user and populate tracked items is faster than query tracked items and user.
+    const include = req.query.include || "";
+    // const response = { success: true };
+    let user;
+    if(include.includes('item')){
+        // response.trackedItemsTiki = await TrackedItemTiki.find({user: req.user._id}).populate({path: 'item', model: ItemTiki});
+        // response.trackedItemsShopee = await TrackedItemShopee.find({user: req.user._id}).populate({path: 'item', model: ItemShopee});
+        user = await User.findById(req.user._id)
+                    .populate({
+                        path: 'TrackedItemsTiki', 
+                        model: TrackedItemTiki, 
+                        populate: {
+                            path: 'item',
+                            model: ItemTiki,
+                        }
+                    })
+                    .populate({
+                        path: 'TrackedItemsShopee', 
+                        model: TrackedItemShopee, 
+                        populate: {
+                            path: 'item',
+                            model: ItemShopee,
+                        }
+                    });
+        // response.user = user
+    }
+    else
+        user = await User.findById(req.user._id);
+
     return res.status(200).json({
         success: true,
-        data: user,
+        user: user,
     })
 });
 
@@ -175,35 +207,6 @@ exports.logout = asyncHandler(async (req, res, next) => {
     res
         .cookie('accessToken', 'none', options)
         .cookie('refreshToken', 'none', options);
-    
-    return res.status(200).json({
-        success: true,
-        data: {}
-    });
-})
-
-/**
- * @description get tracking items by user 
- * @route   GET /api/v1/auth/tracking-items
- * @access  private/protected
- */
-exports.trackingItems = asyncHandler(async (req, res, next) => {
-    
-    
-    return res.status(200).json({
-        success: true,
-        data: {}
-    });
-})
-
-/**
- * @description tracking a new item  
- * @route   POST /api/v1/auth/tracking-items/:itemId?platform=...
- * @access  private/protected
- */
-exports.trackingNewItem = asyncHandler(async (req, res, next) => {
-    const itemId = req.params.itemId;
-    const platform = req.query.platform;
     
     return res.status(200).json({
         success: true,

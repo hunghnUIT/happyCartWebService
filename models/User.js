@@ -47,6 +47,24 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: Date.now
     }
+},
+{
+    toJSON: { virtuals: true},
+    toObject: { virtuals: true}
+});
+
+UserSchema.virtual('TrackedItemsTiki', {
+    ref: 'TrackedItemTiki',
+    localField: '_id',
+    foreignField: 'user',
+    justOne: false
+});
+
+UserSchema.virtual('TrackedItemsShopee', {
+    ref: 'TrackedItemShopee',
+    localField: '_id',
+    foreignField: 'user',
+    justOne: false
 });
 
 // Sign JWT and return 
@@ -91,4 +109,6 @@ UserSchema.methods.getResetPasswordToken = function () {
     return resetToken;
 };
 
-module.exports = mongoose.model('User', UserSchema);
+const myDB = mongoose.connection.useDb('User');
+
+module.exports = myDB.model('User', UserSchema, 'Users');

@@ -3,8 +3,24 @@
 
 # Backend API Specifications
 
-### Item
-- Data for chart showing price of item at the different time.
+### Item & User Services
+<!-- - Data for chart showing price of item at the different time. -->
+  :heavy_check_mark: Available with **Tiki and Shopee platform** by now.
+
+- Show relative information about item by receiving: *item ID, seller ID and item URL*.
+
+  :white_check_mark: Price of item at different time
+
+  :white_check_mark: Preview images
+
+  :white_check_mark: Information about the seller selling that item
+
+- Users are able to follow items and get notifications if there is changing in item's price.
+
+  :white_check_mark: Choose an item to tracking it's price
+
+  :white_large_square: Get notifications if prices are changes
+
 
 
 ### Users & Authentication
