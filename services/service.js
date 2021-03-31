@@ -254,7 +254,7 @@ const collectReviewData = (response, platform, limit, page, filter) => {
             }),
             count: response['ratings'].length,
             pagination: {
-                match: countMatchedReview,
+                totalMatch: countMatchedReview,
                 limit: limit,
                 currentPage: page,
                 lastPage: Math.ceil(countMatchedReview/limit),
