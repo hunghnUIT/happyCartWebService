@@ -1,14 +1,14 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 const ErrorResponse = require('../utils/errorResponse');
 const { processUrl } = require('../helpers/helper');
-const { getItem, getSeller, getPrices } = require('../services/service');
+const { getItem, getSeller, getPrices, getReview } = require('../services/service');
 const ItemTiki = require("../models/ItemTiki");
 const ItemShopee = require("../models/ItemShopee");
 const TrackedItemTiki = require("../models/TrackedItemTiki");
 const TrackedItemShopee = require("../models/TrackedItemShopee");
 
 /**
- * @description Get info by processing item's url, not being declared in "include" won't be returned.
+ * Get info by processing item's url, what not being declared in "include" won't be returned.
  * @route PUT /api/v1/items/info?url=https://....&include=item,price,seller
  * @access public
  */
@@ -42,7 +42,7 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
 });
 
 /**
- * @description Get info item and it's price history
+ * Get info item and it's price history
  * @route PUT /api/v1/items/:itemId?platform=...&include=item,price&seller=...
  * @note seller params is required when crawling Shopee item (item does not exist in DB).
  * @access public
@@ -70,7 +70,7 @@ exports.getItemInfo = asyncHandler(async (req, res, next)=>{
 
 
 /**
- * @description Get info seller of that item
+ * Get info seller of that item
  * @route PUT /api/v1/items/seller/:sellerId?platform=...
  * @access public
  */
@@ -85,16 +85,33 @@ exports.getSellerInfo = asyncHandler(async (req, res, next)=>{
 });
 
 /**
- * @description Get info reviews of that item
- * @route PUT /api/v1/items/review/:itemId
+ * Get reviews of that item
+ * @route PUT /api/v1/items/review/:itemId?platform=...&limit=15&seller=...&filter=...
  * @access public
  */
 exports.getReviewInfo = asyncHandler(async (req, res, next)=>{
+    const itemId = req.params.itemId;
+    const sellerId = req.query.seller || "";
+    const platform = (req.query.platform || "").toLowerCase();
+    const limit =  Math.min(Math.max(req.query.limit || 15, 5), 50); // Limit min: 5, max 50, default 15
+    const page = Math.max(req.query.page || 1, 1); //min = 1;
+    const filter = req.query.filter || "";
+
+    if(!platform ){
+        return next(new ErrorResponse(`Platform is required`));
+    }
+
+    // Seller Id is required, most of time it doesn't need to be exactly match with item id, sometimes incorrect seller id will response rating data = null.
+    if(platform === 'shopee' && !sellerId)
+        return next(new ErrorResponse(`Seller id is required`));
+
+    let reviews = await getReview(itemId, sellerId, platform, limit, page, filter);
     
+    return res.status(200).json(reviews);
 });
 
 /**
- * @description get tracking items by user 
+ * Get tracking items by user 
  * @route   GET /api/v1/items/tracking-items?platform='tiki'||'shopee'||'all'
  * @access  private/protected
  */
@@ -112,7 +129,7 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
 })
 
 /**
- * @description tracking a new item  
+ * Tracking a new item  
  * @route   POST /api/v1/auth/tracking-items/:itemId
  * @access  private/protected
  */
