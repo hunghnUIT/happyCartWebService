@@ -195,7 +195,6 @@ exports.getReview = async (itemId, sellerId, platform, limit, page, filter) => {
         
         config = { headers: HEADERS_TIKI };
     }
-    console.log(url);
 
     try {
         response = (await axios.get(url, config))['data'];
