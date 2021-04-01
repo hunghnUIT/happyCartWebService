@@ -109,7 +109,7 @@ const collectSellerData = (data, platform) => {
     if(platform === 'shopee'){
         seller = {
             id: data.shopid,
-            lastActive: data.last_active_time,
+            lastActive: data.last_active_time*1000,
             isVerified: data.is_shopee_verified,
             isOfficialShop: data.is_official_shop,
             name: data.name,
@@ -118,7 +118,7 @@ const collectSellerData = (data, platform) => {
             ratingNormal: data.rating_normal, // 2 and 3 star
             ratingGood: data.rating_good, // 4 and 5 star 
             totalRating: data.rating_bad + data.rating_normal + data.rating_good,
-            created: data.ctime,
+            created: data.ctime*1000,
             follower: data.follower_count,
             totalItem: data.item_count,
             responseRate: data.response_rate, // rating of response chat and offer deal
@@ -245,7 +245,7 @@ const collectReviewData = (response, platform, limit, page, filter) => {
                     rating: el.rating_star,
                     images: el.images ? el.images.map(el => URL_FILE_SERVER_SHOPEE + el) : [],
                     videos: el.videos,
-                    createdAt: el.ctime,
+                    createdAt: el.ctime*1000,
                     user: {
                         name: el.author_username,
                     },
@@ -278,7 +278,7 @@ const collectReviewData = (response, platform, limit, page, filter) => {
                     content: el.content,
                     rating: el.rating,
                     images: el.images?.length ? el.images.map(img => img.full_path) : [],
-                    createdAt: el.created_at,
+                    createdAt: el.created_at*1000,
                     user: {
                         name: el.created_by.name,
                         fullName: el.created_by.full_name,
