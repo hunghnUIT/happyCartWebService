@@ -277,7 +277,7 @@ const collectReviewData = (response, platform, limit, page, filter) => {
                     id: el.id,
                     content: el.content,
                     rating: el.rating,
-                    images: el.images,
+                    images: el.images?.length ? el.images.map(img => img.full_path) : [],
                     createdAt: el.created_at,
                     user: {
                         name: el.created_by.name,
