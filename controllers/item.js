@@ -6,6 +6,7 @@ const ItemTiki = require("../models/ItemTiki");
 const ItemShopee = require("../models/ItemShopee");
 const TrackedItemTiki = require("../models/TrackedItemTiki");
 const TrackedItemShopee = require("../models/TrackedItemShopee");
+const redis = require('../config/redis').getConnection();
 
 /**
  * Get info by processing item's url, what not being declared in "include" won't be returned.
@@ -106,6 +107,13 @@ exports.getReviewInfo = asyncHandler(async (req, res, next)=>{
         return next(new ErrorResponse(`Seller id is required`));
 
     let reviews = await getReview(itemId, sellerId, platform, limit, page, filter);
+
+    // Cache and set expired.
+    redis.hset(`review-${itemId}-${platform}`, 'data', JSON.stringify(reviews),(err, rep)=>{
+        if(err)
+            console.log(err.message);
+    });
+    redis.expire(`review-${itemId}-${platform}`, 300); //5 mins
     
     return res.status(200).json(reviews);
 });
