@@ -28,7 +28,9 @@ const URL_API_ITEM_TIKI = 'https://tiki.vn/api/v2/products/{item_id}';
 const URL_FILE_SERVER_SHOPEE = 'https://cf.shopee.vn/file/';
 
 const URL_API_REVIEW_SHOPEE = 'https://shopee.vn/api/v2/item/get_ratings?flag=1&itemid={item_id}&shopid={seller_id}'; //type, filter, offset, limit will be add later, flag params still is a mystery
-const URL_API_REVIEW_TIKI = 'https://tiki.vn/api/v2/reviews?product_id={item_id}'
+const URL_API_REVIEW_TIKI = 'https://tiki.vn/api/v2/reviews?product_id={item_id}';
+
+const EXPIRED_TIME_REDIS = 300; // 300s = 5 mins
 
 module.exports = {
     JWT_EXPIRE,
@@ -40,4 +42,5 @@ module.exports = {
     URL_FILE_SERVER_SHOPEE,
     URL_API_REVIEW_SHOPEE,
     URL_API_REVIEW_TIKI,
+    EXPIRED_TIME_REDIS,
 }

@@ -7,9 +7,10 @@ const ItemPriceShopee = require('../models/ItemPriceShopee');
 const { HEADERS_SHOPEE, HEADERS_TIKI, URL_API_REVIEW_SHOPEE, URL_API_REVIEW_TIKI, URL_FILE_SERVER_SHOPEE } = require('../settings');
 const { crawlItemShopee, crawlItemTiki } = require('../helpers/helper');
 const ErrorResponse = require('../utils/errorResponse');
+const { hgetallCache, hsetCache } = require('../helpers/cache');
 
 /** 
- * @description Get data of item
+ * Get data of item
  * @param {Number} itemId id of item
  * @param {Number} sellerId id of item
  * @param {String} platform platform of item
@@ -17,6 +18,11 @@ const ErrorResponse = require('../utils/errorResponse');
  * @returns Promise Model Item
  */
 exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
+    const cacheItem = await hgetallCache(`item-${itemId}-${platform}${getPreviewImages ? '-include=image' : ''}`);
+    if(cacheItem){
+        return cacheItem;
+    }
+
     let item;
     if(platform.toLowerCase() === 'tiki'){
         // if client don't want to preview images, try looking for item in DB first, there's no preview img in there.
@@ -40,11 +46,14 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
             item = await crawlItemShopee(itemId, sellerId, getPreviewImages);
         }
     }
+
+    hsetCache(`item-${itemId}-${platform}${getPreviewImages ? '-include=image' : ''}`, item);
+
     return item;
 };
 
 /** 
- * @description Get data of seller
+ * Get data of seller
  * @param {Number} id id of seller
  * @param {String} platform platform of item that price belong to
  * @returns Promise Model ItemPrice
@@ -61,7 +70,7 @@ exports.getPrices = async (itemId, platform) => {
 };
 
 /** 
- * @description Get data of seller
+ * Get data of seller
  * @param {Number} id id of seller
  * @param {String} platform platform of seller
  * @returns Promise Object seller
@@ -69,6 +78,11 @@ exports.getPrices = async (itemId, platform) => {
 exports.getSeller = async (id, platform) => {
     if(id === -1)
         return 'No seller selling this item'; //This item is no longer be sold (found this on tiki only).
+
+    const cacheSeller = await hgetallCache(`seller-${id}-${platform}`); 
+    if(cacheSeller){
+        return cacheSeller;
+    }
 
     let response;
     let url;
@@ -96,7 +110,12 @@ exports.getSeller = async (id, platform) => {
     else if(!response['data'])
         return null;
     
-    return collectSellerData(response['data'], platform);
+    const data = collectSellerData(response['data'], platform); 
+    
+    // Cache
+    hsetCache(`seller-${id}-${platform}`, data);
+
+    return data;
 };
 
 /**
@@ -206,6 +225,9 @@ exports.getReview = async (itemId, sellerId, platform, limit, page, filter) => {
     
     const reviewData = collectReviewData(response, platform, limit, page, configFilter);
     reviewData.filter = configFilter;
+
+    // Cache and set expired.
+    hsetCache(`review-${itemId}-${platform}`, reviewData);
 
     return reviewData;
 }

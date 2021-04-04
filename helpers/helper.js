@@ -3,7 +3,7 @@ const { URL_API_ITEM_SHOPEE, URL_API_ITEM_TIKI } = require('../settings');
 const { HEADERS_SHOPEE, HEADERS_TIKI, URL_FILE_SERVER_SHOPEE } = require('../settings');
 
 /** 
- * @description round a float number to human readable
+ * round a float number to human readable
  * @returns number in float or int format.
  */
 exports.roundFloatNumber = function (value, decimals) {
@@ -11,7 +11,7 @@ exports.roundFloatNumber = function (value, decimals) {
 }
 
 /** 
- * @description Extract information from url
+ * Extract information from url
  * @returns Object containing "platform", "itemId", "sellerId".
  */
 exports.processUrl = (url) => {
@@ -55,7 +55,7 @@ exports.processUrl = (url) => {
 
 
 /**
- * @description Crawl Tiki item using the same way with crawler.
+ * Crawl Tiki item using the same way with crawler.
  * @param {Number} itemId Id of item about to crawl
  * @param {Boolean} getPreviewImages get preview images or not
  */
@@ -89,7 +89,7 @@ exports.crawlItemTiki = async (itemId, getPreviewImages) => {
 };
 
 /**
- * @description Crawl Shopee item using the same way with crawler.
+ * Crawl Shopee item using the same way with crawler.
  * @param {Number} itemId Id of item about to crawl
  * @param {Number} sellerId Id seller of item about to crawl
  * @param {Boolean} getPreviewImages get preview images or not
