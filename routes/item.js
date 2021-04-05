@@ -4,7 +4,6 @@ const router = express.Router();
 
 const { getInfoByItemUrl, getItemInfo, getSellerInfo, getTrackingItems, trackingNewItem, getReviewInfo } = require('../controllers/item');
 const { protect } = require('../middlewares/auth');
-const { cacheReview } = require('../middlewares/cache');
 
 router
     .get('/tracking-items', protect, getTrackingItems)
@@ -12,7 +11,7 @@ router
     .get('/info', getInfoByItemUrl)
     .get('/:itemId', getItemInfo)
     .get('/seller/:sellerId', getSellerInfo)
-    .get('/review/:itemId', cacheReview, getReviewInfo)
+    .get('/review/:itemId', getReviewInfo)
 
 
 module.exports = router;
