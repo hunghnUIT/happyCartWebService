@@ -172,6 +172,11 @@ const collectSellerData = (data, platform) => {
  * @param {String} filter choose what to show, format: "star:1", "star:5" or "has_media", "filter=star:1,has_media" is NOT allowed
  */
 exports.getReview = async (itemId, sellerId, platform, limit, page, filter) => {
+    const cacheReview = await hgetallCache(`review-${itemId}-${platform}-${limit}-${page}-${filter}`);
+    if(cacheReview){
+        return cacheReview;
+    }
+    
     let response;
     let url = "";
     let configFilter = {};
@@ -227,7 +232,7 @@ exports.getReview = async (itemId, sellerId, platform, limit, page, filter) => {
     reviewData.filter = configFilter;
 
     // Cache and set expired.
-    hsetCache(`review-${itemId}-${platform}`, reviewData);
+    hsetCache(`review-${itemId}-${platform}-${limit}-${page}-${filter}`, reviewData);
 
     return reviewData;
 }
