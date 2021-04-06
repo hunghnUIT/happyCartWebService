@@ -148,3 +148,29 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
         data: trackedItem
     });
 })
+
+/**
+ * Show products that most decreased in price.
+ * @route   GET /api/v1/items/most-decreasing-item?platform='tiki'||'shopee'||'all'
+ * @access  private/protected
+ */
+exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
+    const platform = req.query.platform || 'all';
+    const limit = platform === 'all' ? 10 : 20;
+
+    let items = [];
+
+    if(platform === 'shopee' || platform === 'all'){
+        items = items.concat(await ItemShopee.find().sort({lastPriceChange: 1}).limit(limit)); // lastPriceChange < 0 means price is reduced.
+    }
+    if(platform === 'tiki' || platform === 'all'){
+        items = items.concat(await ItemTiki.find().sort({lastPriceChange: 1}).limit(limit));
+    }
+    if(platform === 'all')
+        items.sort((item1, item2) => item1._doc.lastPriceChange - item2._doc.lastPriceChange)
+
+    return res.status(200).json({
+        success: true,
+        data: items,
+    });
+});
