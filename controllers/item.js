@@ -1,7 +1,7 @@
 const asyncHandler = require("../middlewares/asyncHandler");
 const ErrorResponse = require('../utils/errorResponse');
 const { processUrl } = require('../helpers/helper');
-const { getItem, getSeller, getPrices, getReview } = require('../services/service');
+const { getItem, getSeller, getPrices, getReview, searchItemOnline } = require('../services/service');
 const ItemTiki = require("../models/ItemTiki");
 const ItemShopee = require("../models/ItemShopee");
 const TrackedItemTiki = require("../models/TrackedItemTiki");
@@ -12,7 +12,7 @@ const TrackedItemShopee = require("../models/TrackedItemShopee");
  * @route PUT /api/v1/items/info?url=https://....&include=item,price,seller
  * @access public
  */
-exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
+exports.getInfoByItemUrl = asyncHandler(async (req, res, next) => {
     const url = req.query.url;
     const include = req.query.include || "";
     let item;
@@ -22,20 +22,20 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
 
     let dataFromUrl = processUrl(url);
 
-    if(include.includes('item')){
+    if (include.includes('item')) {
         item = await getItem(dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform'], include.includes('image'));
         response['item'] = item['_doc'] || item; // _doc is where the data actually is in case it queried from DB.
-        
+
     }
-    if(include.includes('price')){
+    if (include.includes('price')) {
         prices = await getPrices(dataFromUrl['itemId'], dataFromUrl['platform']);
         response['prices'] = prices;
     }
-    if(include.includes('seller')){
+    if (include.includes('seller')) {
         seller = await getSeller(dataFromUrl['sellerId'] || response.item['sellerId'], dataFromUrl['platform']);
         response['seller'] = seller;
     }
-    
+
     response['success'] = true;
 
     return res.status(200).json(response)
@@ -47,19 +47,19 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next)=>{
  * @note seller params is required when crawling Shopee item (item does not exist in DB).
  * @access public
  */
-exports.getItemInfo = asyncHandler(async (req, res, next)=>{
+exports.getItemInfo = asyncHandler(async (req, res, next) => {
     const platform = req.query.platform;
     const id = Number(req.params.itemId);
     const sellerId = req.query.seller;
     const include = req.query.include || "";
     const response = {};
-    if(!platform || !id)
-        return next(new ErrorResponse(`Invalid ${!id ? 'item id,' : '' } ${!platform ? 'platform' : '' }`, 400));
-    
-    if(include.includes('item')){
+    if (!platform || !id)
+        return next(new ErrorResponse(`Invalid ${!id ? 'item id,' : ''} ${!platform ? 'platform' : ''}`, 400));
+
+    if (include.includes('item')) {
         response['item'] = await getItem(id, sellerId, platform, include.includes('image'));
     }
-    if(include.includes('price')){
+    if (include.includes('price')) {
         response['price'] = await getPrices(id, platform);
     }
 
@@ -74,7 +74,7 @@ exports.getItemInfo = asyncHandler(async (req, res, next)=>{
  * @route PUT /api/v1/items/seller/:sellerId?platform=...
  * @access public
  */
-exports.getSellerInfo = asyncHandler(async (req, res, next)=>{
+exports.getSellerInfo = asyncHandler(async (req, res, next) => {
     const id = Number(req.params.sellerId);
     const platform = req.query.platform;
 
@@ -89,24 +89,24 @@ exports.getSellerInfo = asyncHandler(async (req, res, next)=>{
  * @route PUT /api/v1/items/review/:itemId?platform=...&limit=15&seller=...&filter=...
  * @access public
  */
-exports.getReviewInfo = asyncHandler(async (req, res, next)=>{
+exports.getReviewInfo = asyncHandler(async (req, res, next) => {
     const itemId = req.params.itemId;
     const sellerId = req.query.seller || "";
     const platform = (req.query.platform || "").toLowerCase();
-    const limit =  Math.min(Math.max(req.query.limit || 15, 5), 50); // Limit min: 5, max 50, default 15
+    const limit = Math.min(Math.max(req.query.limit || 15, 5), 50); // Limit min: 5, max 50, default 15
     const page = Math.max(req.query.page || 1, 1); //min = 1;
     const filter = req.query.filter || "";
 
-    if(!platform ){
+    if (!platform) {
         return next(new ErrorResponse(`Platform is required`));
     }
 
     // Seller Id is required, most of time it doesn't need to be exactly match with item id, sometimes incorrect seller id will response rating data = null.
-    if(platform === 'shopee' && !sellerId)
+    if (platform === 'shopee' && !sellerId)
         return next(new ErrorResponse(`Seller id is required`));
 
     let reviews = await getReview(itemId, sellerId, platform, limit, page, filter);
-    
+
     return res.status(200).json(reviews);
 });
 
@@ -119,10 +119,10 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
     const platform = req.query.platform || "all";
     const response = { success: true };
 
-    if(platform === 'tiki' || platform === 'all')
-        response.trackingItemsTiki = await TrackedItemTiki.find({user: req.user._id}).select('-__v').populate({path: 'item', model: ItemTiki, select: '-_id -expired -__v'});
-    if(platform === 'shopee' || platform === 'all')
-        response.trackingItemsShopee = await TrackedItemShopee.find({user: req.user._id}).select('-__v').populate({path: 'item', model: ItemShopee, select: '-_id -expired -__v'});
+    if (platform === 'tiki' || platform === 'all')
+        response.trackingItemsTiki = await TrackedItemTiki.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' });
+    if (platform === 'shopee' || platform === 'all')
+        response.trackingItemsShopee = await TrackedItemShopee.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemShopee, select: '-_id -expired -__v' });
 
     return res.status(200).json(response);
 
@@ -138,11 +138,11 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
     req.body.user = req.user;
 
     let trackedItem;
-    if(platform === 'tiki')
+    if (platform === 'tiki')
         trackedItem = await TrackedItemTiki.create(req.body);
-    else if(platform === 'shopee')
+    else if (platform === 'shopee')
         trackedItem = await TrackedItemShopee.create(req.body);
-    
+
     return res.status(200).json({
         success: true,
         data: trackedItem
@@ -152,7 +152,7 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
 /**
  * Show products that most decreased in price.
  * @route   GET /api/v1/items/most-decreasing-item?platform='tiki'||'shopee'||'all'
- * @access  private/protected
+ * @access  public
  */
 exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
     const platform = req.query.platform || 'all';
@@ -160,17 +160,118 @@ exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
 
     let items = [];
 
-    if(platform === 'shopee' || platform === 'all'){
-        items = items.concat(await ItemShopee.find().sort({lastPriceChange: 1}).limit(limit)); // lastPriceChange < 0 means price is reduced.
+    if (platform === 'shopee' || platform === 'all') {
+        items = items.concat(await ItemShopee.find().sort({ lastPriceChange: 1 }).limit(limit)); // lastPriceChange < 0 means price is reduced.
     }
-    if(platform === 'tiki' || platform === 'all'){
-        items = items.concat(await ItemTiki.find().sort({lastPriceChange: 1}).limit(limit));
+    if (platform === 'tiki' || platform === 'all') {
+        items = items.concat(await ItemTiki.find().sort({ lastPriceChange: 1 }).limit(limit));
     }
-    if(platform === 'all')
+    if (platform === 'all')
         items.sort((item1, item2) => item1._doc.lastPriceChange - item2._doc.lastPriceChange)
 
     return res.status(200).json({
         success: true,
         data: items,
+    });
+});
+
+/**
+ * Search items matching user's query string in DB first, if no item match then search online
+ * @route   GET /api/v1/items/search?q=.....&platform='tiki'||'shopee'||'all'
+ * @access  public
+ */
+exports.searchItemInDb = asyncHandler(async (req, res, next) => {
+    const q = req.query.q || '';
+    const platform = req.query.platform || 'all';
+    const limit = platform === 'all' ? 10 : 20;
+    
+    let items = [];
+
+    // Naive way of searching
+    // const items = await ItemShopee.find(
+    //     { $text: { $search: q } },
+    //     { score: { $meta: "textScore" } }
+    // ).sort({ score: { $meta: "textScore" } }).limit(5);
+
+    if(platform === 'shopee' || platform === 'all'){
+        let itemsShopee = [];
+
+        itemsShopee = await ItemShopee.aggregate([
+            {
+                $match: {
+                    $text: { $search: q }
+                }
+            }, {
+                $project: {
+                    _id: 0,
+                    id: 1, name: 1, categoryId: 1, rating: 1, thumbnailUrl: 1, 
+                    totalReview: 1, productUrl: 1, currentPrice: 1, platform: 1,
+                    score: {
+                        $add: [
+                            { $meta: "textScore" },
+                            {
+                                $cond: [
+                                    { $eq: ["name", q] },
+                                    10,
+                                    0
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            { $sort: { "score": -1 }}
+        ]).limit(limit);
+
+        if(!itemsShopee.length){
+            itemsShopee = await searchItemOnline(q, 'shopee', limit);
+        }
+
+        items = items.concat(itemsShopee);
+    }
+
+    if(platform === 'tiki' || platform === 'all'){
+        let itemsTiki = [];
+
+        itemsTiki = await ItemTiki.aggregate([
+            {
+                $match: {
+                    $text: { $search: q }
+                }
+            }, {
+                $project: {
+                    _id: 0,
+                    id: 1, name: 1, categoryId: 1, rating: 1, thumbnailUrl: 1, 
+                    totalReview: 1, productUrl: 1, currentPrice: 1, platform: 1,
+                    score: {
+                        $add: [
+                            { $meta: "textScore" },
+                            {
+                                $cond: [
+                                    { $eq: ["name", q] },
+                                    10,
+                                    0
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            { $sort: { "score": -1 }}
+        ]).limit(limit);
+
+        if(!itemsTiki.length){
+            itemsTiki = await searchItemOnline(q, 'tiki', limit);
+        }
+
+        items = items.concat(itemsTiki);
+    }
+
+    if(platform === 'all')
+        items.sort((item1, item2) => item2.score - item1.score); // Greater score first
+
+    return res.status(200).json({
+        success: true,
+        items: items,
     });
 });

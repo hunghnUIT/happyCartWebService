@@ -32,6 +32,9 @@ const URL_API_REVIEW_TIKI = 'https://tiki.vn/api/v2/reviews?product_id={item_id}
 
 const EXPIRED_TIME_REDIS = 300; // 300s = 5 mins
 
+const URL_API_SEARCH_ITEM_SHOPEE = 'https://shopee.vn/api/v4/search/search_items?keyword={q}'; // Default limit = 10
+const URL_API_SEARCH_ITEM_TIKI = 'https://tiki.vn/api/v2/products?q={q}'; // Default limit = 10
+
 module.exports = {
     JWT_EXPIRE,
     JWT_EXPIRE_FOR_REFRESH,
@@ -43,4 +46,6 @@ module.exports = {
     URL_API_REVIEW_SHOPEE,
     URL_API_REVIEW_TIKI,
     EXPIRED_TIME_REDIS,
+    URL_API_SEARCH_ITEM_SHOPEE,
+    URL_API_SEARCH_ITEM_TIKI,
 }
