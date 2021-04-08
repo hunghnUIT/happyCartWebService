@@ -22,7 +22,7 @@ exports.hgetallCache = async (key) => {
  * @param {Number} expired time to live in second, default is 300s, expired -1 means won't be expired.
  */
 exports.hsetCache = async (key, value, expired) => {
-    await redis.hset(key, 'data', JSON.stringify(value));
+    await redis.hset(key, 'data', JSON.stringify(value)).catch(error => console.error(error));
     if(expired !== -1){
         await redis.expire(key, expired || EXPIRED_TIME_REDIS);
     }
