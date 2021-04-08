@@ -156,7 +156,7 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
  */
 exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
     const platform = req.query.platform || 'all';
-    const limit = platform === 'all' ? 10 : 20;
+    const limit = req.query.limit || platform === 'all' ? 10 : 20;
 
     let items = [];
 

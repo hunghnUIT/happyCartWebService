@@ -123,3 +123,11 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
     
     return result;
 };
+
+/**
+ * Check if this date is today
+ * @param {Date} date checking date
+ */
+exports.isToday = (date) => {
+    return (new Date().toDateString() == new Date(date).toDateString());
+};

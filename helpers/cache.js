@@ -19,7 +19,7 @@ exports.hgetallCache = async (key) => {
  * Use method hset, cache key-value
  * @param {String} key key to cache value.
  * @param {Object} value value to cache, will be stringify in this function.
- * @param {Number} expired time to live, default is 300s, expired -1 means won't be expired.
+ * @param {Number} expired time to live in second, default is 300s, expired -1 means won't be expired.
  */
 exports.hsetCache = async (key, value, expired) => {
     await redis.hset(key, 'data', JSON.stringify(value));

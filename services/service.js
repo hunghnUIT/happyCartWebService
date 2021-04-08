@@ -13,7 +13,7 @@ const {
     URL_API_SEARCH_ITEM_SHOPEE,
     URL_API_SEARCH_ITEM_TIKI,
 } = require('../settings');
-const { crawlItemShopee, crawlItemTiki } = require('../helpers/helper');
+const { crawlItemShopee, crawlItemTiki, isToday } = require('../helpers/helper');
 const ErrorResponse = require('../utils/errorResponse');
 const { hgetallCache, hsetCache } = require('../helpers/cache');
 
@@ -61,7 +61,7 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
 };
 
 /** 
- * Get data of seller
+ * Get data of item's prices
  * @param {Number} id id of seller
  * @param {String} platform platform of item that price belong to
  * @returns Promise Model ItemPrice
@@ -69,10 +69,40 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
 exports.getPrices = async (itemId, platform) => {
     let itemPrices = [];
     if (platform.toLowerCase() === 'tiki') {
-        itemPrices = await ItemPriceTiki.find({ itemId: itemId }, '-_id -__v');
+        itemPrices = await ItemPriceTiki.find({ itemId: itemId }, '-_id -__v').sort({update: 1}).limit(50);
     }
     else if (platform.toLowerCase() === 'shopee') {
-        itemPrices = await ItemPriceShopee.find({ itemId: itemId }, '-_id -__v');
+        itemPrices = await ItemPriceShopee.find({ itemId: itemId }, '-_id -__v').sort({update: 1}).limit(50);
+    }
+
+    const latestPriceNode = itemPrices[itemPrices.length - 1]?.['_doc'] || null; // Latest updated price node
+    if (latestPriceNode) {
+        let latestItemInfo; // Always get the latest price at the moment user request prices
+
+        const cacheItem = await hgetallCache(`onlineItem-${itemId}-${platform}`);
+        if (cacheItem) 
+            latestItemInfo = cacheItem;
+        else {
+            if (platform.toLowerCase() === 'tiki')
+                latestItemInfo = await crawlItemTiki(itemId);
+            else if (platform.toLowerCase() === 'shopee') 
+                latestItemInfo = await crawlItemShopee(itemId);
+            
+            hsetCache(`onlineItem-${itemId}-${platform}`, latestItemInfo, 60);
+        }
+
+        // no price updated today => create a fake price node
+        if (!isToday(latestPriceNode['update'])) {
+            itemPrices.push({
+                itemId: itemId,
+                price: latestItemInfo['currentPrice'],
+                update: new Date().getTime(),
+            });
+        }
+        else {
+            latestPriceNode.price = latestItemInfo['currentPrice'];
+            latestPriceNode.update = new Date().getTime();
+        }
     }
     return itemPrices;
 };
