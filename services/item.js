@@ -29,5 +29,5 @@ exports.addItemToCrawlingList = async (itemId, sellerId, platform) => {
         itemId: itemId,
         sellerId: sellerId,
     };
-    await redis.hset(`listItemToCrawl-${platform}`, `${itemId}-${sellerId}`, JSON.stringify(value)).catch(error => console.error(error));
+    await redis.hset(`listItemToCrawl-${platform}`, `${itemId}-${platform}`, JSON.stringify(value)).catch(error => console.error(error));
 };

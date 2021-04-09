@@ -62,11 +62,12 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
 
 /** 
  * Get data of item's prices
- * @param {Number} id id of seller
+ * @param {Number} itemId id of item
+ * @param {Number} sellerId id of seller, required for shopee only
  * @param {String} platform platform of item that price belong to
  * @returns Promise Model ItemPrice
  */
-exports.getPrices = async (itemId, platform) => {
+exports.getPrices = async (itemId, sellerId, platform) => {
     let itemPrices = [];
     if (platform.toLowerCase() === 'tiki') {
         itemPrices = await ItemPriceTiki.find({ itemId: itemId }, '-_id -__v').sort({update: 1}).limit(50);
@@ -86,7 +87,7 @@ exports.getPrices = async (itemId, platform) => {
             if (platform.toLowerCase() === 'tiki')
                 latestItemInfo = await crawlItemTiki(itemId);
             else if (platform.toLowerCase() === 'shopee') 
-                latestItemInfo = await crawlItemShopee(itemId);
+                latestItemInfo = await crawlItemShopee(itemId, sellerId);
             
             hsetCache(`onlineItem-${itemId}-${platform}`, latestItemInfo, 60);
         }
