@@ -182,49 +182,48 @@ exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
 exports.searchItemInDb = asyncHandler(async (req, res, next) => {
     const q = req.query.q || '';
     const platform = req.query.platform || 'all';
-    const limit = platform === 'all' ? 10 : 20;
+    const limit = platform === 'all' ? 15 : 30;
     
     let items = [];
-
-    // Naive way of searching
-    // const items = await ItemShopee.find(
-    //     { $text: { $search: q } },
-    //     { score: { $meta: "textScore" } }
-    // ).sort({ score: { $meta: "textScore" } }).limit(5);
 
     if(platform === 'shopee' || platform === 'all'){
         let itemsShopee = [];
 
-        itemsShopee = await ItemShopee.aggregate([
-            {
-                $match: {
-                    $text: { $search: q }
-                }
-            }, {
-                $project: {
-                    _id: 0,
-                    id: 1, name: 1, categoryId: 1, rating: 1, thumbnailUrl: 1, 
-                    totalReview: 1, productUrl: 1, currentPrice: 1, platform: 1,
-                    score: {
-                        $add: [
-                            { $meta: "textScore" },
-                            {
-                                $cond: [
-                                    { $eq: ["name", q] },
-                                    10,
-                                    0
-                                ]
-                            }
-                        ]
-                    }
-                }
-            },
-            { $sort: { "score": -1 }}
-        ]).limit(limit);
+        // Regex first, try to find with given phrases
+        itemsShopee = await ItemShopee.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).select('-expired').limit(limit);
 
-        if(!itemsShopee.length){
+        // If found nothing, try again with other technic. Should I try this technic or just search online?
+        if(!itemsShopee.length)
+            itemsShopee = await ItemShopee.aggregate([
+                {
+                    $match: {
+                        $text: { $search: q } 
+                    }
+                }, {
+                    $project: {
+                        _id: 0,
+                        id: 1, name: 1, categoryId: 1, rating: 1, thumbnailUrl: 1, 
+                        totalReview: 1, productUrl: 1, currentPrice: 1, platform: 1, lastPriceChange: 1,
+                        score: {
+                            $add: [
+                                { $meta: "textScore" },
+                                {
+                                    $cond: [
+                                        { $eq: ["name", q] },
+                                        10,
+                                        0
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                { $sort: { "score": -1 }}
+            ]).limit(limit);
+
+        // Still not found => search online
+        if(!itemsShopee.length)
             itemsShopee = await searchItemOnline(q, 'shopee', limit);
-        }
 
         items = items.concat(itemsShopee);
     }
@@ -232,36 +231,41 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
     if(platform === 'tiki' || platform === 'all'){
         let itemsTiki = [];
 
-        itemsTiki = await ItemTiki.aggregate([
-            {
-                $match: {
-                    $text: { $search: q }
-                }
-            }, {
-                $project: {
-                    _id: 0,
-                    id: 1, name: 1, categoryId: 1, rating: 1, thumbnailUrl: 1, 
-                    totalReview: 1, productUrl: 1, currentPrice: 1, platform: 1,
-                    score: {
-                        $add: [
-                            { $meta: "textScore" },
-                            {
-                                $cond: [
-                                    { $eq: ["name", q] },
-                                    10,
-                                    0
-                                ]
-                            }
-                        ]
-                    }
-                }
-            },
-            { $sort: { "score": -1 }}
-        ]).limit(limit);
+        // Regex first, try to find with given phrases
+        itemsTiki = await ItemTiki.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).limit(limit);
 
-        if(!itemsTiki.length){
+        // If found nothing, try again with other technic. Should I try this technic or just search online?
+        if(!itemsTiki.length)
+            itemsTiki = await ItemTiki.aggregate([
+                {
+                    $match: {
+                        $text: { $search: q }
+                    }
+                }, {
+                    $project: {
+                        _id: 0,
+                        id: 1, name: 1, categoryId: 1, rating: 1, thumbnailUrl: 1, 
+                        totalReview: 1, productUrl: 1, currentPrice: 1, platform: 1, lastPriceChange: 1,
+                        score: {
+                            $add: [
+                                { $meta: "textScore" },
+                                {
+                                    $cond: [
+                                        { $eq: ["name", q] },
+                                        10,
+                                        0
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                },
+                { $sort: { "score": -1 }}
+            ]).limit(limit);
+
+        // Still not found => search online
+        if(!itemsTiki.length)
             itemsTiki = await searchItemOnline(q, 'tiki', limit);
-        }
 
         items = items.concat(itemsTiki);
     }
