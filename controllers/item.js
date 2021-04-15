@@ -6,8 +6,7 @@ const ItemTiki = require("../models/ItemTiki");
 const ItemShopee = require("../models/ItemShopee");
 const TrackedItemTiki = require("../models/TrackedItemTiki");
 const TrackedItemShopee = require("../models/TrackedItemShopee");
-const CategoryShope = require("../models/CategoryShopee");
-const CategoryTiki = require("../models/CategoryTiki");
+const StandardCategory = require("../models/StandardCategory");
 
 /**
  * Get info by processing item's url, what not being declared in "include" won't be returned.
@@ -61,7 +60,7 @@ exports.getItemInfo = asyncHandler(async (req, res, next) => {
         response['item'] = await getItem(id, sellerId, platform, include.includes('image'));
     }
     if (include.includes('price')) {
-        response['price'] = await getPrices(id, platform);
+        response['price'] = await getPrices(id, sellerId, platform);
     }
 
     response['success'] = true;
@@ -152,46 +151,100 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
 
 /**
  * Show products that most decreased in price.
- * @route   GET /api/v1/items/most-decreasing-item?platform='tiki'||'shopee'||'all'
+ * @route   GET /api/v1/items/most-decreasing-item?platform=...&category=...&page=1
  * @access  public
  */
 exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
     const platform = req.query.platform || 'all';
-    const limit = req.query.limit || platform === 'all' ? 10 : 20;
+    const limit = Math.min(Math.max(req.query.limit || 20, 10), 50); // Limit min: 5, max 50, default 20
+    const actuallyLimit = platform === 'all' ? limit/2 : limit;
+    const page =  Math.max(req.query.page || 1, 1); //min = 1;
     const categoryName = req.query.category || "";
+    
+    let standardCategories;
     
     let filterCategoriesShopee = { lastPriceChange: {'$lt': 0} };
     let filterCategoriesTiki = { lastPriceChange: {'$lt': 0} };
+    
+    // Pagination
+    const skip = (page - 1) * actuallyLimit;
+    let total = 0;
+    let countMatchShopee = 0;
+    let countMatchTiki = 0;
+    let lackingNumberShopee = actuallyLimit;
+    let lackingNumberTiki = actuallyLimit;
+    let numberItemTikiFilledIn = 0;
+    let numberItemShopeeFilledIn = 0;
 
     if (categoryName) {
-        const searchStr = categoryName.replace(/&/g, '.* | .*');
-        if (platform === 'shopee' || platform === 'all') {
-            const ids = (await CategoryShope.find(({name : {$regex : `.*${searchStr}.*`, $options: 'i'}}))).map(el => el._doc.id);
-            console.log(ids);
-            filterCategoriesShopee.categoryId = {'$in': ids};
-        }
-        if (platform === 'tiki' || platform === 'all') {
-            const ids = (await CategoryTiki.find(({name : {$regex : `.*${searchStr}.*`, $options: 'i'}}))).map(el => el._doc.id);
-            console.log(ids);
-            filterCategoriesTiki.categoryId = {'$in': ids};
-        } 
+        standardCategories = await StandardCategory.findOne(({name : {$regex : `.*${categoryName}.*`, $options: 'i'}}));
+        const shopeeIds = (standardCategories._doc.shopee_equi_cate_id).split("|").map(el => Number(el));
+        const tikiIds = (standardCategories._doc.tiki_equi_cate_id).split("|").map(el => Number(el));
+        filterCategoriesShopee.categoryId = {'$in': shopeeIds};
+        filterCategoriesTiki.categoryId = {'$in': tikiIds};
+    }
+    else {
+        standardCategories = await StandardCategory.find().select('-shopee_equi_cate_id -tiki_equi_cate_id -_id');
     }
 
     let items = [];
 
-    if (platform === 'shopee' || platform === 'all') {
-        items = items.concat(await ItemShopee.find(filterCategoriesShopee).sort({ lastPriceChange: 1 }).limit(limit)); // lastPriceChange < 0 means price is reduced.
-    }
+    // Get count for later so it need to be done first
     if (platform === 'tiki' || platform === 'all') {
-        items = items.concat(await ItemTiki.find(filterCategoriesTiki).sort({ lastPriceChange: 1 }).limit(limit));
+        countMatchTiki = await ItemTiki.countDocuments(filterCategoriesTiki);
+        numberItemShopeeFilledIn = skip - countMatchTiki;
+        numberItemShopeeFilledIn = numberItemShopeeFilledIn < 0 ? 0 : numberItemShopeeFilledIn; // 
+        total += countMatchTiki;
     }
-    if (platform === 'all')
-        items.sort((item1, item2) => item1._doc.lastPriceChange - item2._doc.lastPriceChange)
+    if (platform === 'shopee' || platform === 'all') {
+        countMatchShopee = await ItemShopee.countDocuments(filterCategoriesShopee);
+        numberItemTikiFilledIn = skip - countMatchShopee;
+        numberItemTikiFilledIn = numberItemTikiFilledIn < 0 ? 0 : numberItemTikiFilledIn; // 
+        total += countMatchShopee;
+    }
 
-    return res.status(200).json({
+    if ((platform === 'shopee' || platform === 'all') && skip < countMatchShopee) {
+        // If there are still items 
+        const itemsShopee = await ItemShopee.find(filterCategoriesShopee).sort({ lastPriceChange: 1 }).limit(actuallyLimit).skip(skip+numberItemShopeeFilledIn); // lastPriceChange < 0 means price is reduced.
+        lackingNumberShopee = actuallyLimit - itemsShopee.length;
+        items = items.concat(itemsShopee); 
+    }
+    if ((platform === 'tiki' || platform === 'all') && skip < countMatchTiki) {
+        // If there are still items 
+        const itemsTiki = await ItemTiki.find(filterCategoriesTiki).sort({ lastPriceChange: 1 }).limit(actuallyLimit).skip(skip+numberItemTikiFilledIn);
+        lackingNumberTiki = actuallyLimit - itemsTiki.length;
+        items = items.concat(itemsTiki);
+    }
+
+    // If Shopee not enough item but still there are of Tiki
+    if (lackingNumberShopee && skip < countMatchTiki) {
+        items = items.concat(await ItemTiki.find(filterCategoriesTiki).sort({ lastPriceChange: 1 }).limit(lackingNumberShopee).skip(skip+actuallyLimit+numberItemTikiFilledIn));
+    }
+    // If Tiki not enough item but still there are of Shopee
+    if (lackingNumberTiki && skip < countMatchShopee) {
+        items = items.concat(await ItemShopee.find(filterCategoriesShopee).sort({ lastPriceChange: 1 }).limit(lackingNumberTiki).skip(skip+actuallyLimit+numberItemShopeeFilledIn));
+    }
+
+    if (platform === 'all')
+        items.sort((item1, item2) => item1._doc.lastPriceChange - item2._doc.lastPriceChange);
+
+    const response = {
         success: true,
         data: items,
-    });
+        pagination: {
+            totalMatchShopee: countMatchShopee,
+            totalMatchTiki: countMatchTiki,
+            totalMatch: total,
+            limit: limit,
+            currentPage: page,
+            lastPage: Math.ceil(total / limit),
+        }
+    }
+
+    if (standardCategories.length)
+        response.categories = standardCategories;
+
+    return res.status(200).json(response);
 });
 
 /**
@@ -210,7 +263,7 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
         let itemsShopee = [];
 
         // Regex first, try to find with given phrases
-        itemsShopee = await ItemShopee.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).select('-expired').limit(limit);
+        itemsShopee = await ItemShopee.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).select('-expired').limit(limit).sort({currentPrice: -1});
 
         // If found nothing, try again with other technic. Should I try this technic or just search online?
         if(!itemsShopee.length)
@@ -251,15 +304,15 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
     if(platform === 'tiki' || platform === 'all'){
         let itemsTiki = [];
 
-        // Regex first, try to find with given phrases
-        itemsTiki = await ItemTiki.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).limit(limit);
+        // Regex first, try to find with given phrases <== This way is not good for Tiki platform as well as Shopee
+        // itemsTiki = await ItemTiki.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).select('-expired').limit(limit).sort({currentPrice: 1});
 
         // If found nothing, try again with other technic. Should I try this technic or just search online?
         if(!itemsTiki.length)
             itemsTiki = await ItemTiki.aggregate([
                 {
                     $match: {
-                        $text: { $search: q }
+                        $text: { $search: `\"${q}\"` }
                     }
                 }, {
                     $project: {
@@ -291,7 +344,7 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
     }
 
     if(platform === 'all')
-        items.sort((item1, item2) => item2.score - item1.score); // Greater score first
+        items.sort((item1, item2) => item1._doc?.currentPrice ? item1._doc?.currentPrice : item1.currentPrice - item2._doc?.currentPrice ? item2._doc.currentPrice : item2.currentPrice); // Ascending price
 
     return res.status(200).json({
         success: true,
