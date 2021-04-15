@@ -9,10 +9,12 @@ const hpp = require('hpp');
 const cors = require('cors');
 const errorHandler = require('./middlewares/errorHandler');
 const multer = require('multer');
+// const passport = require('passport');
 
 const userRoute = require('./routes/user');
 const authRoute = require('./routes/auth');
 const itemRoute = require('./routes/item');
+const categoryRoute = require('./routes/category');
 
 const connectDB = require('./config/db');
 
@@ -52,9 +54,13 @@ if(process.env.NODE_ENV === 'development'){
     app.use(morgan('dev'));
 }
 
+// app.use(passport.initialize());
+// app.use(passport.session());
+
 app.use("/api/v1/items/", itemRoute);
 app.use("/api/v1/users/", userRoute);
 app.use("/api/v1/auth/", authRoute);
+app.use("/api/v1/categories/", categoryRoute);
 
 
 app.use(errorHandler);
