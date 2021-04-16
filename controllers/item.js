@@ -176,7 +176,7 @@ exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
     let numberItemTikiFilledIn = 0;
     let numberItemShopeeFilledIn = 0;
 
-    if (categoryName) {
+    if (categoryName && categoryName !== 'tất cả') {
         standardCategories = await StandardCategory.findOne(({name : {$regex : `.*${categoryName}.*`, $options: 'i'}}));
         const shopeeIds = (standardCategories._doc.shopee_equi_cate_id).split("|").map(el => Number(el));
         const tikiIds = (standardCategories._doc.tiki_equi_cate_id).split("|").map(el => Number(el));
@@ -184,7 +184,7 @@ exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
         filterCategoriesTiki.categoryId = {'$in': tikiIds};
     }
     else {
-        standardCategories = await StandardCategory.find().select('-shopee_equi_cate_id -tiki_equi_cate_id -_id');
+        standardCategories = await StandardCategory.find().select('-shopee_equi_cate_id -tiki_equi_cate_id -_id').sort({name: 1});
     }
 
     let items = [];
