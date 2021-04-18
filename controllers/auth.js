@@ -213,3 +213,15 @@ exports.logout = asyncHandler(async (req, res, next) => {
         data: {}
     });
 });
+
+exports.failAuthFacebook = asyncHandler(async (req, res, next) => {
+    return next(new ErrorResponse(`Login failed, please try again.`))
+});
+
+exports.successAuthFacebook = asyncHandler(async (req, res, next) => {
+    res.status(200).json({
+        success: true,
+        user: req.user,
+        info: req.info,
+    });
+});

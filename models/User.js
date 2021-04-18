@@ -5,13 +5,14 @@ const crypto = require('crypto');
 const settings = require('../settings');
 
 const UserSchema = new mongoose.Schema({
+    _id: String,
     name: {
         type: String,
         required: [true, 'Please add a name']
     },
     phone: {
         type: String,
-        required: [true, 'Please add an phone number'],
+        required: [!isAuthByThirdParty, 'Please add an phone number'],
         unique: true,
         match: [
             /((09|03|07|08|05)+([0-9]{8})\b)/g,
@@ -29,7 +30,7 @@ const UserSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Please add a password'],
+        required: [!isAuthByThirdParty, 'Please add a password'],
         minlength: 6,
         select: false,
         match: [
@@ -46,12 +47,28 @@ const UserSchema = new mongoose.Schema({
     createdAt: {
         type: Number,
         default: Date.now
+    },
+    isAuthByThirdParty: {
+        type: Boolean,
+        default: false,
+    },
+    provider: {
+        type: String,
+        required: isAuthByThirdParty, 
     }
 },
 {
     toJSON: { virtuals: true},
     toObject: { virtuals: true}
 });
+
+/**
+ * If auth by third party (google, facebook, etc.), these field **won't** be required 
+ * @returns Boolean
+ */
+function isAuthByThirdParty() {
+    return this.isAuthByThirdParty;
+}
 
 UserSchema.virtual('TrackedItemsTiki', {
     ref: 'TrackedItemTiki',

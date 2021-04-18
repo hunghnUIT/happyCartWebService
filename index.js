@@ -9,7 +9,8 @@ const hpp = require('hpp');
 const cors = require('cors');
 const errorHandler = require('./middlewares/errorHandler');
 const multer = require('multer');
-// const passport = require('passport');
+const passport = require('passport');
+const expressSession = require('express-session');
 
 const userRoute = require('./routes/user');
 const authRoute = require('./routes/auth');
@@ -17,12 +18,16 @@ const itemRoute = require('./routes/item');
 const categoryRoute = require('./routes/category');
 
 const connectDB = require('./config/db');
+const initLoginFacebook = require('./config/fb');
 
 // Load env
 dotenv.config({path: './config/config.env'})
 
 // Connect to DB
 connectDB();
+
+// init log in with facebook
+initLoginFacebook();
 
 const app = express();
 
@@ -53,9 +58,14 @@ app.use(hpp());
 if(process.env.NODE_ENV === 'development'){
     app.use(morgan('dev'));
 }
+// Session
+app.use(expressSession({ 
+    secret: process.env.SECRET, resave: false,
+    cookie: { secure: true }, saveUninitialized: true,
+}));
 
-// app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use("/api/v1/items/", itemRoute);
 app.use("/api/v1/users/", userRoute);

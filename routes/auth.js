@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { register, login, myAccount, refreshToken, logout, changePassword, updateAccount } = require('../controllers/auth');
 const { protect } = require('../middlewares/auth');
-
+const facebookRoute = require('./fb');
 
 router
     .post('/register', register)
@@ -14,5 +14,7 @@ router
     .post('/token', refreshToken)
     .put('/change-password', protect, changePassword)
     .put('/update-account', protect, updateAccount)
+
+router.use('/facebook', facebookRoute)
 
 module.exports = router;
