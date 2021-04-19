@@ -1,6 +1,7 @@
 const passport = require('passport');
 const FacebookStrategy = require('passport-facebook').Strategy;
 const User = require('../models/User');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 const initLoginFacebook = () => {
     // Passport session setup. 
@@ -20,7 +21,8 @@ const initLoginFacebook = () => {
     },
         function (accessToken, refreshToken, profile, done) {
             process.nextTick(function () {
-                User.findById(profile.id, function (err, user) {
+                const profileId = `${'0'.repeat(24 - (profile.id).length)}${profile.id}`;
+                User.findById(profileId, function (err, user) {
                     if (err)
                         return done(err);
                     if (user) {
@@ -29,7 +31,7 @@ const initLoginFacebook = () => {
                     else {
                         // create new User
                         const newUser = new User();
-                        newUser._id = profile.id;
+                        newUser._id = ObjectId(profileId);
                         newUser.name = profile.displayName;
                         newUser.email = profile.emails[0].value; // fb can return many emails, just grab the first of theme.
                         newUser.isAuthByThirdParty = true;

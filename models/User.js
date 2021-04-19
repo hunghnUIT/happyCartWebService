@@ -5,7 +5,6 @@ const crypto = require('crypto');
 const settings = require('../settings');
 
 const UserSchema = new mongoose.Schema({
-    _id: String,
     name: {
         type: String,
         required: [true, 'Please add a name']
@@ -13,7 +12,7 @@ const UserSchema = new mongoose.Schema({
     phone: {
         type: String,
         required: [!isAuthByThirdParty, 'Please add an phone number'],
-        unique: true,
+        unique: true,  sparse: true, // unique if not null
         match: [
             /((09|03|07|08|05)+([0-9]{8})\b)/g,
             'Please add a valid phone number'

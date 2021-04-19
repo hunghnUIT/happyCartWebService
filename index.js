@@ -61,7 +61,7 @@ if(process.env.NODE_ENV === 'development'){
 // Session
 app.use(expressSession({ 
     secret: process.env.SECRET, resave: false,
-    cookie: { secure: true }, saveUninitialized: true,
+    cookie: { httpOnly: true }, saveUninitialized: true,
 }));
 
 app.use(passport.initialize());
