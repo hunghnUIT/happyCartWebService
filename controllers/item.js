@@ -176,7 +176,7 @@ exports.mostDecreasingItem = asyncHandler(async (req, res, next) => {
     let numberItemTikiFilledIn = 0;
     let numberItemShopeeFilledIn = 0;
 
-    if (categoryName && categoryName !== 'tất cả') {
+    if (categoryName && categoryName.toLowerCase() !== 'tất cả') {
         standardCategories = await StandardCategory.findOne(({name : {$regex : `.*${categoryName}.*`, $options: 'i'}}));
         const shopeeIds = (standardCategories._doc.shopee_equi_cate_id).split("|").map(el => Number(el));
         const tikiIds = (standardCategories._doc.tiki_equi_cate_id).split("|").map(el => Number(el));
@@ -256,6 +256,37 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
     const q = req.query.q || '';
     const platform = req.query.platform || 'all';
     const limit = platform === 'all' ? 15 : 30;
+    const categoryName = req.query.category || "";
+
+    // Query
+    const regexShopee = { 
+        name: { $regex : `.*${q}.*`, $options: 'i' },
+    };
+    const regexTiki = { 
+        name: { $regex : `.*${q}.*`, $options: 'i' },
+    };
+    const matchQueryShopee = {
+        $text: { $search: q },
+    }
+    const matchQueryTiki = {
+        $text: { $search: `\"${q}\"` },
+    }
+
+    let standardCategories;
+    if (categoryName && categoryName.toLowerCase() !== 'tất cả') {
+        standardCategories = await StandardCategory.findOne(({name : {$regex : `.*${categoryName}.*`, $options: 'i'}}));
+
+        const shopeeIds = (standardCategories._doc.shopee_equi_cate_id).split("|").map(el => Number(el));
+        regexShopee.categoryId = {'$in': shopeeIds};
+        matchQueryShopee.categoryId = {'$in': shopeeIds};
+
+        const tikiIds = (standardCategories._doc.tiki_equi_cate_id).split("|").map(el => Number(el));
+        regexTiki.categoryId = {'$in': tikiIds};
+        matchQueryTiki.categoryId = {'$in': tikiIds};
+    }
+    else {
+        standardCategories = await StandardCategory.find().select('-shopee_equi_cate_id -tiki_equi_cate_id -_id').sort({name: 1});
+    }
     
     let items = [];
 
@@ -263,15 +294,13 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
         let itemsShopee = [];
 
         // Regex first, try to find with given phrases
-        itemsShopee = await ItemShopee.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).select('-expired').limit(limit).sort({currentPrice: -1});
+        itemsShopee = await ItemShopee.find(regexShopee).select('-expired').limit(limit).sort({currentPrice: -1});
 
         // If found nothing, try again with other technic. Should I try this technic or just search online?
         if(!itemsShopee.length)
             itemsShopee = await ItemShopee.aggregate([
                 {
-                    $match: {
-                        $text: { $search: q } 
-                    }
+                    $match: matchQueryShopee
                 }, {
                     $project: {
                         _id: 0,
@@ -305,15 +334,13 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
         let itemsTiki = [];
 
         // Regex first, try to find with given phrases <== This way is not good for Tiki platform as well as Shopee
-        // itemsTiki = await ItemTiki.find({name : {$regex : `.*${q}.*`, $options: 'i'}}).select('-expired').limit(limit).sort({currentPrice: 1});
+        // itemsTiki = await ItemTiki.find(regexTiki).select('-expired').limit(limit).sort({currentPrice: 1});
 
         // If found nothing, try again with other technic. Should I try this technic or just search online?
         if(!itemsTiki.length)
             itemsTiki = await ItemTiki.aggregate([
                 {
-                    $match: {
-                        $text: { $search: `\"${q}\"` }
-                    }
+                    $match: matchQueryTiki 
                 }, {
                     $project: {
                         _id: 0,
@@ -349,5 +376,6 @@ exports.searchItemInDb = asyncHandler(async (req, res, next) => {
     return res.status(200).json({
         success: true,
         items: items,
+        categories: standardCategories.length ? standardCategories : undefined, // Not show this falsy.
     });
 });
