@@ -12,7 +12,7 @@ const multer = require('multer');
 const passport = require('passport');
 const expressSession = require('express-session');
 
-const userRoute = require('./routes/user');
+const adminRoute = require('./routes/admin');
 const authRoute = require('./routes/auth');
 const itemRoute = require('./routes/item');
 const categoryRoute = require('./routes/category');
@@ -68,7 +68,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use("/api/v1/items/", itemRoute);
-app.use("/api/v1/users/", userRoute);
+app.use("/api/v1/admin/", adminRoute);
 app.use("/api/v1/auth/", authRoute);
 app.use("/api/v1/categories/", categoryRoute);
 
