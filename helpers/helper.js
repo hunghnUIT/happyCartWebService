@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { URL_API_ITEM_SHOPEE, URL_API_ITEM_TIKI } = require('../settings');
 const { HEADERS_SHOPEE, HEADERS_TIKI, URL_FILE_SERVER_SHOPEE } = require('../settings');
+const { addItemToCrawlingList } = require('../services/item');
 
 /** 
  * round a float number to human readable
@@ -60,6 +61,8 @@ exports.processUrl = (url) => {
  * @param {Boolean} getPreviewImages get preview images or not
  */
 exports.crawlItemTiki = async (itemId, getPreviewImages) => {
+    addItemToCrawlingList(itemId, null, 'tiki');
+
     let endpoint = URL_API_ITEM_TIKI; 
     endpoint = endpoint.replace('{item_id}', itemId);
     
@@ -95,6 +98,8 @@ exports.crawlItemTiki = async (itemId, getPreviewImages) => {
  * @param {Boolean} getPreviewImages get preview images or not
  */
 exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
+    addItemToCrawlingList(itemId, sellerId, 'shopee');
+
     let endpoint = URL_API_ITEM_SHOPEE;
     endpoint = endpoint.replace('{item_id}', itemId);
     endpoint = endpoint.replace('{seller_id}', sellerId);

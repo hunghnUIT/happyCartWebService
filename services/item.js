@@ -1,5 +1,5 @@
 const ItemTiki = require('../models/ItemTiki');
-const { redis } = require('../config/redis').getConnection();
+const redis = require('../config/redis').getConnection();
 
 /**
  * Update field sellerId in ItemTiki.
