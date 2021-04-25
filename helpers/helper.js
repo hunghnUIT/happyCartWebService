@@ -108,11 +108,16 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
     const item = response['item'];
     let result = {};
     if(item){
+        let cateId = item['categories']?.[0]?.['catid'] ? item['categories'][0]['catid'] : -1;
+        for (const cate of item['categories']) {
+            if (cate['no_sub']) // Find the leaf category this item belong to
+                cateId = cate['catid']
+        }
         result = {
             id: item['itemid'],
             name: item['name'],
             sellerId: item['shopid'],
-            categoryId: item['categories'][0]['catid'],
+            categoryId: cateId,
             rating: item['item_rating']['rating_star'],
             productUrl: `https://shopee.vn/product/${item['shopid']}/${item['itemid']}`,
             thumbnailUrl: `https://cf.shopee.vn/file/${item['image']}`,
