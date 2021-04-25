@@ -18,31 +18,31 @@ exports.roundFloatNumber = function (value, decimals) {
 exports.processUrl = (url) => {
     url = url.toLowerCase(); // for sure than sorry.
     let result = {};
-    
-    if(url.includes('shopee'))
+
+    if (url.includes('shopee'))
         result['platform'] = 'shopee';
-    else if(url.includes('tiki'))
+    else if (url.includes('tiki'))
         result['platform'] = 'tiki';
 
-    if(result['platform'] === 'shopee'){
+    if (result['platform'] === 'shopee') {
         // E.g: https://shopee.vn/product/283338743/9918567180?smtt=0.174867900-1616510545.9 // Shop id first, then item id
-        if(url.includes('shopee.vn/product/')){
-            if(url.indexOf('?') > -1)
+        if (url.includes('shopee.vn/product/')) {
+            if (url.indexOf('?') > -1)
                 url = url.slice(0, url.indexOf('?'));
             let splittedUrlBySlash = url.split('/');
-    
+
             result['itemId'] = Number(splittedUrlBySlash[splittedUrlBySlash.length - 1]);
             result['sellerId'] = Number(splittedUrlBySlash[splittedUrlBySlash.length - 2]);
         }
         // E.g: https://shopee.vn/bach-tuoc-cam-xuc-2-mat-cam-xuc-do-choi-bach-tuoc-co-the-dao-nguoc-tam-trang-bach-tuoc-sang-trong-i.283338743.9918567180 //id shop first, then id item
-        else{
+        else {
             let splittedUrlByDot = url.split('.');
-    
+
             result['itemId'] = Number(splittedUrlByDot[splittedUrlByDot.length - 1]);
             result['sellerId'] = Number(splittedUrlByDot[splittedUrlByDot.length - 2]);
         }
     }
-    else if(result['platform'] === 'tiki'){
+    else if (result['platform'] === 'tiki') {
         // E.g: https://tiki.vn/dien-thoai-iphone-12-pro-max-128gb-hang-chinh-hang-p70771651.html?src=ss-organic
         url = url.slice(0, url.indexOf('.html')); // Remove tail after ".html"
         let splittedUrlByDash = url.split('-');
@@ -63,31 +63,31 @@ exports.processUrl = (url) => {
 exports.crawlItemTiki = async (itemId, getPreviewImages) => {
     addItemToCrawlingList(itemId, null, 'tiki');
 
-    let endpoint = URL_API_ITEM_TIKI; 
+    let endpoint = URL_API_ITEM_TIKI;
     endpoint = endpoint.replace('{item_id}', itemId);
-    
+
     const response = (await axios.get(endpoint, { headers: HEADERS_TIKI }))['data'];
     let result = {}
-    if(response){
+    if (response) {
         result = {
             id: response['id'],
             name: response['name'],
             categoryId: response['categories']?.['id'] ? response['categories']['id'] : "unknown",
             sellerId: response['current_seller']?.['id'] ? response['current_seller']['id'] : -1,
             rating: response['rating_average'],
-            stock: response['stock_item']?.['qty'] ? response['stock_item']['qty']: 0,
+            stock: response['stock_item']?.['qty'] ? response['stock_item']['qty'] : 0,
             productUrl: `https://tiki.vn/${response['url_path']}`,
             thumbnailUrl: response['thumbnail_url'],
             totalReview: response['review_count'],
             currentPrice: parseInt(response['price']),
             platform: 'tiki',
         }
-        if(getPreviewImages)
+        if (getPreviewImages)
             result['previewImages'] = response['images'];
     }
     else
         return `Not found item id ${itemId}`;
-    
+
     return result;
 };
 
@@ -103,12 +103,12 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
     let endpoint = URL_API_ITEM_SHOPEE;
     endpoint = endpoint.replace('{item_id}', itemId);
     endpoint = endpoint.replace('{seller_id}', sellerId);
-    
+
     const response = (await axios.get(endpoint, { headers: HEADERS_SHOPEE }))['data'];
     const item = response['item'];
     let result = {};
-    if(item){
-        let cateId = item['categories']?.[0]?.['catid'] ? item['categories'][0]['catid'] : -1;
+    if (item) {
+        let cateId = item['categories']?.[0]?.['catid'] ? item['categories'][0]['catid'] : "unknown";
         for (const cate of item['categories']) {
             if (cate['no_sub']) // Find the leaf category this item belong to
                 cateId = cate['catid']
@@ -125,12 +125,12 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
             currentPrice: parseInt(item['price_min']) / 100000,
             platform: 'shopee',
         };
-        if(getPreviewImages)
-            result['previewImages'] = item['images'].map((el)=> URL_FILE_SERVER_SHOPEE + el);
+        if (getPreviewImages)
+            result['previewImages'] = item['images'].map((el) => URL_FILE_SERVER_SHOPEE + el);
     }
     else
         return `Not found item id ${itemId} belong to shop ${sellerId}`;
-    
+
     return result;
 };
 
