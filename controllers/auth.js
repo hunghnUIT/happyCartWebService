@@ -46,7 +46,7 @@ exports.register = asyncHandler(async (req, res, next) => {
                 });
         }
         else 
-            return next(ErrorResponse('Can not create user'));
+            return next(new ErrorResponse('Can not create user'));
     });
 });
 
@@ -76,7 +76,7 @@ const requestVerifyEmail = async (req, email) => {
         success = true;
     } catch (error) {
         console.log(error);
-        return next(ErrorResponse('Email could not be sent'), 500)
+        return next(new ErrorResponse('Email could not be sent'), 500)
     }
 
     return success;
@@ -362,7 +362,7 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
 
         await user.save({ validateBeforeSave: false })
 
-        return next(ErrorResponse('Email could not be sent'), 500)
+        return next(new ErrorResponse('Email could not be sent'), 500)
     }
 
     res.status(200).json({
