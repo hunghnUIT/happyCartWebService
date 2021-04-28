@@ -55,7 +55,11 @@ const UserSchema = new mongoose.Schema({
     provider: {
         type: String,
         required: isAuthByThirdParty, 
-    }
+    },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
 },
 {
     toJSON: { virtuals: true},
@@ -90,7 +94,7 @@ UserSchema.pre('save', async function (next) {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
     }
-    
+    next();
 });
 
 // Sign JWT and return
@@ -124,6 +128,14 @@ UserSchema.methods.getResetPasswordToken = function () {
     this.resetPasswordExpire = Date.now() + 10*60*1000; // in ms, 10 mins
 
     return resetToken;
+};
+
+UserSchema.methods.getVerifyEmailToken = function () {
+    // This is a different way from getResetPasswordToken and I considering which way should I use
+    // Verify process use the same secret key with accessToken
+    return jwt.sign({id: this._id} , process.env['JWT_SECRET'], {
+        expiresIn: '1d'
+    })
 };
 
 const myDB = mongoose.connection.useDb('SERVER');

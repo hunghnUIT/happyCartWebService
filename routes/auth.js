@@ -5,13 +5,14 @@ const router = express.Router();
 const { 
     register, login, myAccount, refreshToken, 
     logout, changePassword, updateAccount,
-    forgotPassword, resetPassword,
+    forgotPassword, resetPassword, verifyEmail,
 } = require('../controllers/auth');
 const { protect } = require('../middlewares/auth');
 const facebookRoute = require('./fb');
 
 router
     .post('/register', register)
+    .get('/register/verify/:token', verifyEmail)
     .post('/login', login)
     .get('/logout', logout)
     .get('/my-account', protect, myAccount)

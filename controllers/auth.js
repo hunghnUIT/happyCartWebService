@@ -17,13 +17,105 @@ const crypto = require('crypto');
 exports.register = asyncHandler(async (req, res, next) => {
     const { name, email, password } = req.body;
 
-    const user = await User.create({
-        name,
-        email,
-        password,
-    });
+    const user = await User.findOne({email: email, isVerified: true});
 
-    sendTokenResponse(user, 200, res);
+    if (user) 
+        return next(new ErrorResponse('User already exists', 422));
+    
+    User.findOne({ email: email }, async (err, user) => {
+        if (err) {
+            console.log(err);
+            return next(new ErrorResponse(err.message), err.code || 500);
+        }
+
+        if (user) {
+            user.name = name;
+            user.password = password || ""; // Add default value for showing error for password
+
+            await user.save().catch(err => next(new ErrorResponse(err.message)));
+        }
+        else 
+            user = await User.create({ email, name, password }).catch(err => next(new ErrorResponse(err.message)));
+
+        if (user) {
+            const requestVerify = await requestVerifyEmail(req, email);
+            if (requestVerify)
+                return res.status(200).json({
+                    success: true,
+                    message: 'Waiting for the verification of email'
+                });
+        }
+        else 
+            return next(ErrorResponse('Can not create user'));
+    });
+});
+
+/**
+ * Send email to verify user's email
+ * @param {Object} req information of request
+ * @param {String} email to verify
+ */
+const requestVerifyEmail = async (req, email) => {
+    const user = await User.findOne({ email: email });
+
+    // Get reset token
+    const verifyToken = user.getVerifyEmailToken();
+
+    // Create verify url
+    const verifyURL = `${req.protocol}://${req.get('host')}/api/v1/auth/register/verify/${verifyToken}`
+
+    const message = `You are receiving this email because you (or someone else) has requested the verification of email. Click at the link below to verify the email if that person was you: \n\n ${verifyURL}`
+
+    let success = false;
+    try {
+        await sendMail({
+            email: user.email,
+            subject: 'Email verification',
+            message,
+        });
+        success = true;
+    } catch (error) {
+        console.log(error);
+        return next(ErrorResponse('Email could not be sent'), 500)
+    }
+
+    return success;
+};
+
+/**
+ * Verify account
+ * @route   GET /api/v1/auth/register/verify/:token
+ * @access  public
+ */
+exports.verifyEmail = asyncHandler(async (req, res, next) => {
+    const token = req.params.token || "";
+
+    try {
+        const decoded = jwt.verify(token, process.env['JWT_SECRET']);
+        const user = await User.findById(decoded.id);
+
+        // Not found token or token expires
+        if (!user) {
+            return next(new ErrorResponse("Invalid token", 400))
+        }
+
+        user.isVerified = true;
+        await user.save();
+
+        res.setHeader('Content-type','text/html');
+        // &#10004; Check mark in html
+        return res.send(`
+            <span style="width: 100%; text-align: center;">
+                <h3>
+                    <span style="color:green; font-size:2rem">&#127881;</span>
+                        Congratulations
+                    <span style="color:green; font-size:2rem">&#127881;</span>
+                </h3>
+                <h3>Your email address <a style="text-decoration: none;" href="mailto:${user.email}">${user.email}</a> has been verified.</h3>
+            </span>`);
+    } catch (error) {
+        return next(new ErrorResponse("Invalid token", 401));
+    }    
 });
 
 /**
@@ -41,6 +133,9 @@ exports.login = asyncHandler(async (req, res, next) => {
 
     if (!user)
         return next(new ErrorResponse('Invalid credentials', 401));
+    
+    if (!user.isVerified)
+        return next(new ErrorResponse('Please verify your email to continue', 422));
 
     const isMatch = await user.matchPassword(password);
     if (!isMatch)
