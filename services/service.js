@@ -16,6 +16,7 @@ const {
 const { crawlItemShopee, crawlItemTiki, isToday } = require('../helpers/helper');
 const ErrorResponse = require('../utils/errorResponse');
 const { hgetallCache, hsetCache } = require('../helpers/cache');
+const { addItemToCrawlingList } = require('../services/item');
 
 /** 
  * Get data of item
@@ -38,8 +39,10 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
             item = await ItemTiki.findOne({ id: itemId }, '-_id -__v -expired');
 
         // If item is not in DB or items on Tiki not having seller id or client want to preview images then crawl it.
-        if (!item || !item['_doc']?.['sellerId'])
+        if (!item || !item['_doc']?.['sellerId']) {
+            addItemToCrawlingList(itemId, sellerId, 'tiki'); // SellerId is undefined with Tiki
             item = await crawlItemTiki(itemId, getPreviewImages);
+        }
     }
     else if (platform.toLowerCase() === 'shopee') {
         if (!getPreviewImages)
@@ -51,6 +54,7 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
             if (!sellerId)
                 throw new ErrorResponse('Seller id params is required along with Shopee items');
 
+            addItemToCrawlingList(itemId, sellerId, 'shopee');
             item = await crawlItemShopee(itemId, sellerId, getPreviewImages);
         }
     }
@@ -92,17 +96,49 @@ exports.getPrices = async (itemId, sellerId, platform) => {
             hsetCache(`onlineItem-${itemId}-${platform}`, latestItemInfo, 60);
         }
 
+        const currentTime = new Date().getTime();
         // no price updated today => create a fake price node
         if (!isToday(latestPriceNode['update'])) {
             itemPrices.push({
                 itemId: itemId,
                 price: latestItemInfo['currentPrice'],
-                update: new Date().getTime(),
+                update: currentTime,
+                // Add default priceChangeInDay
+                priceChangeInDay: [{
+                    price: latestItemInfo['currentPrice'],
+                    update: currentTime,
+                    isFlashSale: false,
+                }]
             });
         }
+        // Price updated today, check if price change to add price node to priceChangeInDay
         else {
+            const lengthArrPriceChange = latestPriceNode?.priceChangeInDay?.length || 0;
+            // Check if priceChangeInDay of latest node exist (for sure than sorry)
+            if (lengthArrPriceChange) {
+                if (latestPriceNode.priceChangeInDay[lengthArrPriceChange-1].price !== latestItemInfo['currentPrice']) {
+                    // If price is changed, add to crawl list with hoping to catch that price.
+                    addItemToCrawlingList(itemId, sellerId, platform); // NOTE Should I do this?
+
+                    latestPriceNode.priceChangeInDay.push({
+                        price: latestItemInfo['currentPrice'],
+                        update: currentTime,
+                        isFlashSale: false,
+                    });
+                }
+                else
+                    latestPriceNode.priceChangeInDay[lengthArrPriceChange-1].update = currentTime;
+            }
+            // This case is rarely happen because every node price created with default priceChangeInDay
+            else {
+                latestPriceNode.priceChangeInDay = [{
+                    price: latestItemInfo['currentPrice'],
+                    update: currentTime,
+                    isFlashSale: false,
+                }]
+            }
             latestPriceNode.price = latestItemInfo['currentPrice'];
-            latestPriceNode.update = new Date().getTime();
+            latestPriceNode.update = currentTime;
         }
     }
     return itemPrices;
