@@ -2,7 +2,11 @@ const express = require('express');
 
 const router = express.Router();
 
-const { register, login, myAccount, refreshToken, logout, changePassword, updateAccount } = require('../controllers/auth');
+const { 
+    register, login, myAccount, refreshToken, 
+    logout, changePassword, updateAccount,
+    forgotPassword, resetPassword,
+} = require('../controllers/auth');
 const { protect } = require('../middlewares/auth');
 const facebookRoute = require('./fb');
 
@@ -14,6 +18,8 @@ router
     .post('/token', refreshToken)
     .put('/change-password', protect, changePassword)
     .put('/update-account', protect, updateAccount)
+    .post('/forgot-password', forgotPassword)
+    .put('/reset-password/:token', resetPassword)
 
 router.use('/facebook', facebookRoute)
 

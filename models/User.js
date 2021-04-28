@@ -9,15 +9,16 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a name']
     },
-    phone: {
-        type: String,
-        required: [!isAuthByThirdParty, 'Please add an phone number'],
-        unique: true,  sparse: true, // unique if not null
-        match: [
-            /((09|03|07|08|05)+([0-9]{8})\b)/g,
-            'Please add a valid phone number'
-        ]
-    },
+    // April 28th 2021: Realized phone number is no longer necessary => use email to auth instead.
+    // phone: {
+    //     type: String,
+    //     required: [!isAuthByThirdParty, 'Please add an phone number'],
+    //     unique: true,  sparse: true, // unique if not null
+    //     match: [
+    //         /((09|03|07|08|05)+([0-9]{8})\b)/g,
+    //         'Please add a valid phone number'
+    //     ]
+    // },
     email: {
         type: String,
         required: [true, 'Please add an email'],
@@ -125,6 +126,6 @@ UserSchema.methods.getResetPasswordToken = function () {
     return resetToken;
 };
 
-const myDB = mongoose.connection.useDb('User');
+const myDB = mongoose.connection.useDb('SERVER');
 
 module.exports = myDB.model('User', UserSchema, 'Users');

@@ -6,6 +6,8 @@ const TrackedItemTiki = require('../models/TrackedItemTiki');
 const TrackedItemShopee = require('../models/TrackedItemShopee');
 const ItemTiki = require('../models/ItemTiki');
 const ItemShopee = require('../models/ItemShopee');
+const sendMail = require('../utils/sendEmail')
+const crypto = require('crypto');
 
 /**
  * Register user
@@ -13,11 +15,10 @@ const ItemShopee = require('../models/ItemShopee');
  * @access  public
  */
 exports.register = asyncHandler(async (req, res, next) => {
-    const { name, phone, email, password } = req.body;
+    const { name, email, password } = req.body;
 
     const user = await User.create({
         name,
-        phone,
         email,
         password,
     });
@@ -31,12 +32,12 @@ exports.register = asyncHandler(async (req, res, next) => {
  * @access  public
  */
 exports.login = asyncHandler(async (req, res, next) => {
-    const { phone, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!phone || !password)
-        return next(new ErrorResponse('Please provide both phone and password', 400));
+    if (!email || !password)
+        return next(new ErrorResponse('Please provide both email and password', 400));
 
-    const user = await User.findOne({ phone: phone }).select('+password');
+    const user = await User.findOne({ email: email }).select('+password');
 
     if (!user)
         return next(new ErrorResponse('Invalid credentials', 401));
@@ -224,4 +225,87 @@ exports.successAuthFacebook = asyncHandler(async (req, res, next) => {
         user: req.user,
         info: req.info,
     });
+});
+
+/**
+ * Forgot password
+ * @route   POST /api/v1/auth/forgot-password
+ * @access  public
+ */
+exports.forgotPassword = asyncHandler(async (req, res, next) => {
+    const email = req.body.email || "";
+    if (!email)
+        return next(new ErrorResponse('Email is required.'));
+
+    const user = await User.findOne({ email: email });
+
+    if (!user) {
+        return next(new ErrorResponse("No user with that email found.", 404));
+    }
+
+    // Get reset token
+    const resetToken = user.getResetPasswordToken();
+
+    user.save({ validateBeforeSave: false });
+
+    // Create reset url
+    const resetURL = `${req.protocol}://${req.get('host')}/api/v1/auth/reset-password/${resetToken}`
+
+    const message = `You are receiving this email because you (or someone else) has requested the reset of password. Please make a PUT request to: \n\n ${resetURL}`
+
+    try {
+        await sendMail({
+            email: user.email,
+            subject: 'Password reset token',
+            message,
+        });
+
+    } catch (error) {
+        console.log(error);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+
+        await user.save({ validateBeforeSave: false })
+
+        return next(ErrorResponse('Email could not be sent'), 500)
+    }
+
+    res.status(200).json({
+        success: true,
+        data: 'Email sent',
+    });
+});
+
+/**
+ * Reset password
+ * @route   PUT /api/v1/auth/reset-password/:token
+ * @access  public
+ */
+exports.resetPassword = asyncHandler(async (req, res, next) => {
+    const token = req.params.token || "";
+
+    // Get hashed token
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find the user having resetToken and it still available
+    let user = await User.findOne({
+        resetPasswordToken: resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    // Not found token or token expires
+    if (!user) {
+        return next(new ErrorResponse("Invalid token", 400))
+    }
+
+    // Set the new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined // Remove both two field below from DB.
+    user.resetPasswordExpire = undefined
+
+    await user.save();
+
+    // Log user in after that.
+    sendTokenResponse(user, 200, res);
+    return;
 });
