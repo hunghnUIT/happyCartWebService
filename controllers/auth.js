@@ -96,7 +96,7 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
 
         // Not found token or token expires
         if (!user) {
-            return res.status(401).send('Invalid token');
+            return res.status(401).send('Invalid or expired token');
         }
 
         user.isVerified = true;
@@ -114,7 +114,7 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
                 <h3>Your email address <a style="text-decoration: none;" href="mailto:${user.email}">${user.email}</a> has been verified.</h3>
             </span>`);
     } catch (error) {
-        return res.status(401).send('Invalid token');
+        return res.status(401).send('Invalid or expired token');
     }    
 });
 
@@ -344,7 +344,7 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
     user.save({ validateBeforeSave: false });
 
     // Create reset url
-    const resetURL = `${req.protocol}://${req.get('host')}/api/v1/auth/reset-password/${resetToken}`
+    const resetURL = `${req.protocol}://${req.get('host')}/auth/reset-password/${resetToken}`
 
     const message = `You are receiving this email because you (or someone else) has requested the reset of password. Please make a PUT request to: \n\n ${resetURL}`
 
@@ -390,7 +390,7 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
 
     // Not found token or token expires
     if (!user) {
-        return next(new ErrorResponse("Invalid token", 400))
+        return next(new ErrorResponse("Invalid or expired token", 401))
     }
 
     // Set the new password
@@ -404,3 +404,73 @@ exports.resetPassword = asyncHandler(async (req, res, next) => {
     sendTokenResponse(user, 200, res);
     return;
 });
+
+
+
+
+
+
+
+// FIXME temporary code until I find another way to do this, DELETE AS SOON AS POSSIBLE.
+/**
+ * Reset password for get method
+ * @route   GET /auth/reset-password/:token
+ * @access  public
+ */
+exports.getUIResetPassword = async (req, res, next) => {
+    const token = req.params.token || "";
+
+    // Get hashed token
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find the user having resetToken and it still available
+    const user = await User.findOne({
+        resetPasswordToken: resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    // Not found token or token expires
+    if (!user) {
+        return res.status(401).send('Invalid or expired token');
+    }
+
+    return res.render('reset-password');
+};
+
+/**
+ * Reset password for post method
+ * @route   POST /auth/reset-password/:token
+ * @access  public
+ */
+exports.postUIResetPassword = async (req, res, next) => {
+    const token = req.params.token || "";
+
+    // Get hashed token
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find the user having resetToken and it still available
+    const user = await User.findOne({
+        resetPasswordToken: resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    // Not found token or token expires
+    if (!user) {
+        return res.status(401).send('Invalid or expired token');
+    }
+
+    // Set the new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined // Remove both two field below from DB.
+    user.resetPasswordExpire = undefined
+
+    let errMsg = '';
+    await user.save().catch(err => {
+        errMsg = err.message;
+    });
+
+    if (errMsg)
+        return res.status(400).send(`${errMsg}`);
+    else
+        return res.status(200).send('Success');
+}

@@ -72,6 +72,15 @@ app.use("/api/v1/admin/", adminRoute);
 app.use("/api/v1/auth/", authRoute);
 app.use("/api/v1/categories/", categoryRoute);
 
+// FIXME These lines below is temporary until I find some other way to do this, DELETE AS SOON AS POSSIBLE
+// Reset password with token must be in GUI because mail is sent.
+const { getUIResetPassword, postUIResetPassword } = require('./controllers/auth');
+app.use(multer().array()); // don't understand why need to put this line here AGAIN for parsing form body
+app.set('views', './public');
+app.set('view engine', 'ejs');
+app.get('/auth/reset-password/:token', getUIResetPassword);
+app.post('/auth/reset-password/:token', postUIResetPassword);
+
 
 app.use(errorHandler);
 
