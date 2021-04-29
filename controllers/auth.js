@@ -38,7 +38,7 @@ exports.register = asyncHandler(async (req, res, next) => {
             user = await User.create({ email, name, password }).catch(err => next(new ErrorResponse(err.message)));
 
         if (user) {
-            const requestVerify = await requestVerifyEmail(req, email);
+            const requestVerify = await requestVerifyEmail(req, email).catch(err => next(new ErrorResponse(err.message, err.code)));
             if (requestVerify)
                 return res.status(200).json({
                     success: true,
@@ -76,7 +76,7 @@ const requestVerifyEmail = async (req, email) => {
         success = true;
     } catch (error) {
         console.log(error);
-        return next(new ErrorResponse('Email could not be sent'), 500)
+        throw new ErrorResponse('Email could not be sent', 500);
     }
 
     return success;
@@ -96,7 +96,7 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
 
         // Not found token or token expires
         if (!user) {
-            return next(new ErrorResponse("Invalid token", 400))
+            return res.status(401).send('Invalid token');
         }
 
         user.isVerified = true;
@@ -114,7 +114,7 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
                 <h3>Your email address <a style="text-decoration: none;" href="mailto:${user.email}">${user.email}</a> has been verified.</h3>
             </span>`);
     } catch (error) {
-        return next(new ErrorResponse("Invalid token", 401));
+        return res.status(401).send('Invalid token');
     }    
 });
 
