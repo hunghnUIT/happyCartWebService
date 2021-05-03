@@ -148,13 +148,26 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
  */
 exports.trackingNewItem = asyncHandler(async (req, res, next) => {
     const platform = req.body.platform;
-    req.body.user = req.user;
+    req.body.user = req.user.id;
+    req.body.update = new Date();
 
     let trackedItem;
     if (platform === 'tiki')
-        trackedItem = await TrackedItemTiki.create(req.body);
+        trackedItem = await TrackedItemTiki.findOneAndUpdate({
+            itemId: req.body.itemId,
+            user: req.body.user,
+        }, req.body, {
+            upsert: true,
+            new: true,
+        });
     else if (platform === 'shopee')
-        trackedItem = await TrackedItemShopee.create(req.body);
+        trackedItem = await TrackedItemShopee.findOneAndUpdate({
+            itemId: req.body.itemId,
+            user: req.body.user,
+        }, req.body, {
+            upsert: true,
+            new: true,
+        });
 
     return res.status(200).json({
         success: true,

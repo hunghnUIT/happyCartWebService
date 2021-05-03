@@ -18,11 +18,11 @@ const TrackedItemSchema =  new mongoose.Schema({
         type: Number,
         required: [true, 'Please enter a valid price to get notifications'],
     },
-    createAt: {
+    create: {
         type: Number,
         default: Date.now(),
     },
-    updateAt: {
+    update: {
         type: Number,
     },
 },
@@ -39,7 +39,7 @@ TrackedItemSchema.virtual('item', {
 });
 
 TrackedItemSchema.pre('save', function(next){
-    this.updateAt = new Date().getTime();
+    this.update = new Date().getTime();
     next();
 });
 

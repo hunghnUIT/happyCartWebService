@@ -74,10 +74,10 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
 exports.getPrices = async (itemId, sellerId, platform) => {
     let itemPrices = [];
     if (platform.toLowerCase() === 'tiki') {
-        itemPrices = await ItemPriceTiki.find({ itemId: itemId }, '-_id -__v').sort({update: 1}).limit(50);
+        itemPrices = await ItemPriceTiki.find({ itemId: itemId }, '-_id -__v').sort({update: 1});
     }
     else if (platform.toLowerCase() === 'shopee') {
-        itemPrices = await ItemPriceShopee.find({ itemId: itemId }, '-_id -__v').sort({update: 1}).limit(50);
+        itemPrices = await ItemPriceShopee.find({ itemId: itemId }, '-_id -__v').sort({update: 1});
     }
 
     const latestPriceNode = itemPrices[itemPrices.length - 1]?.['_doc'] || null; // Latest updated price node
