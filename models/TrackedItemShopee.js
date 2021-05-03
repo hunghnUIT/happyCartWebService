@@ -43,6 +43,6 @@ TrackedItemSchema.pre('save', function(next){
     next();
 });
 
-const myDB = mongoose.connection.useDb('User');
+const myDB = mongoose.connection.useDb('USER');
 
 module.exports = myDB.model('TrackedItemShopee', TrackedItemSchema, 'TrackedItemsShopee')

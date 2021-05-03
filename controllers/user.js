@@ -1,15 +1,74 @@
-const asyncHandler = require('../middlewares/asyncHandler');
 const User = require('../models/User');
+const asyncHandler = require('../middlewares/asyncHandler');
 const ErrorResponse = require('../utils/errorResponse');
+const TrackedItemTiki = require('../models/TrackedItemTiki');
+const TrackedItemShopee = require('../models/TrackedItemShopee');
+const ItemTiki = require('../models/ItemTiki');
+const ItemShopee = require('../models/ItemShopee');
 
 /**
- * @description Get a user by id
- * @route GET /api/v1/users/:userId
- * @access private/admin
- * @returns Object represent for User Schema.
+ * Return tokens and status
+ * @param {Schema} user user logged in or registered
+ * @param {Number} statusCode HTTP response code
+ * @param {any} res for response purpose.
  */
-exports.getUser = asyncHandler(async function(req, res, next){
-    const user = await User.findById(req.params.userId);
+const sendTokenResponse = (user, statusCode, res, refToken) => {
+    const accessToken = user.getAccessToken();
+    const refreshToken = refToken || user.getRefreshToken();
+
+    const options = {
+        expired: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 60 * 60 * 1000), // 1h
+        httpOnly: true,
+    }
+
+    if (process.env.NODE_ENV === 'production')
+        options.secure = true;
+
+    res.status(statusCode)
+        .cookie('accessToken', accessToken, options)
+        .cookie('refreshToken', refreshToken, options)
+        .json({
+            success: true,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+        })
+};
+
+/**
+ * View my account
+ * @route   GET /api/v1/user/my-account?include=item
+ * @access  private
+ */
+exports.myAccount = asyncHandler(async (req, res, next) => {
+    // NOTE: Look like query user and populate tracked items is faster than query tracked items and user.
+    const include = req.query.include || "";
+    // const response = { success: true };
+    let user;
+    if (include.includes('item')) {
+        // response.trackedItemsTiki = await TrackedItemTiki.find({user: req.user._id}).populate({path: 'item', model: ItemTiki});
+        // response.trackedItemsShopee = await TrackedItemShopee.find({user: req.user._id}).populate({path: 'item', model: ItemShopee});
+        user = await User.findById(req.user._id)
+            .populate({
+                path: 'TrackedItemsTiki',
+                model: TrackedItemTiki,
+                populate: {
+                    path: 'item',
+                    model: ItemTiki,
+                }
+            })
+            .populate({
+                path: 'TrackedItemsShopee',
+                model: TrackedItemShopee,
+                populate: {
+                    path: 'item',
+                    model: ItemShopee,
+                }
+            });
+        // response.user = user
+    }
+    else
+        user = await User.findById(req.user._id);
+
     return res.status(200).json({
         success: true,
         user: user,
@@ -17,46 +76,17 @@ exports.getUser = asyncHandler(async function(req, res, next){
 });
 
 /**
- * @description Get all users
- * @route GET /api/v1/users/
- * @access private/admin
- * @returns {Array} represent for list of users.
+ * Update detail account
+ * @route   PUT /api/v1/user/update-account
+ * @access  private
  */
-exports.getUsers = asyncHandler(async (req, res, next) => {
-    const users = await User.find();
-    return res.status(200).json({
-        success: true,
-        count: users.length,
-        data: users
-    });
-});
-
-/**
- * @description Create a new user
- * @route POST /api/v1/users/
- * @access private/admin
- */
-exports.createUser = asyncHandler(async (req, res, next) => {
-    if(req.body.isAdmin === 'true'){
-        if(req.body.secretToken !== process.env['SECRET_TOKEN'])
-            return next(new ErrorResponse("Invalid credentials for creating admin account.", 401))
+exports.updateAccount = asyncHandler(async (req, res, next) => {
+    // Only allow to edit fields bellow.
+    const fieldsToUpdate = {
+        name: req.body.name,
     }
-    const user = await User.create(req.body);
-    return res.status(201).json({
-        success: true,
-        data: user,
-        // accessToken: user.getAccessToken(),
-        // refreshToken: user.getRefreshToken(),
-    });
-});
 
-/**
- * @description Update a user
- * @route PUT /api/v1/users/:userId
- * @access private/admin
- */
-exports.updateUser = asyncHandler(async (req, res, next) => {
-    const user = await User.findByIdAndUpdate(req.params.userId, req.body, {
+    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
         new: true,
         runValidators: true
     });
@@ -67,14 +97,67 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @description delete a user
- * @route DELETE /api/users/:userId
- * @access private/admin
+ * Change password for user 
+ * @route   PUT /api/v1/user/change-password
+ * @access  private
  */
-exports.deleteUser = asyncHandler(async (req, res, next) => {
-    await User.findByIdAndDelete(req.params.userId);
+exports.changePassword = asyncHandler(async (req, res, next) => {
+    const { currentPassword, newPassword } = req.body;
+
+    let user = await User.findById(req.user.id).select('+password');
+    let checkPassword = await user.matchPassword(currentPassword.toString());
+
+    if (!checkPassword) {
+        return next(new ErrorResponse("Incorrect current password", 401))
+    }
+
+    /** NOTE: We have to use this way but findByIdAndUpdate, unless sendTokenResponse below will raise error
+     * Description error:
+     * - findByIdAndUpdate return some kind of object, but it's not able to call the 
+     * getSignedJwtToken function which is inside UserSchema. Maybe the object return is 
+     * just the document so it can't call the function.
+     * - findById return also some kind of object but it able to call the function.
+     */
+    user.password = newPassword;
+    user = await user.save();
+
+    sendTokenResponse(user, 200, res);
+});
+
+/**
+ * Get tracking items by user 
+ * @route   GET /api/v1/user/tracking-items?platform='tiki'||'shopee'||'all'
+ * @access  private/protected
+ */
+exports.getTrackingItems = asyncHandler(async (req, res, next) => {
+    const platform = req.query.platform || "all";
+    const response = { success: true };
+
+    if (platform === 'tiki' || platform === 'all')
+        response.trackingItemsTiki = await TrackedItemTiki.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' });
+    if (platform === 'shopee' || platform === 'all')
+        response.trackingItemsShopee = await TrackedItemShopee.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemShopee, select: '-_id -expired -__v' });
+
+    return res.status(200).json(response);
+});
+
+/**
+ * Tracking a new item  
+ * @route   POST /api/v1/user/tracking-items
+ * @access  private/protected
+ */
+exports.trackingNewItem = asyncHandler(async (req, res, next) => {
+    const platform = req.body.platform;
+    req.body.user = req.user;
+
+    let trackedItem;
+    if (platform === 'tiki')
+        trackedItem = await TrackedItemTiki.create(req.body);
+    else if (platform === 'shopee')
+        trackedItem = await TrackedItemShopee.create(req.body);
+
     return res.status(200).json({
         success: true,
-        data: {}
+        data: trackedItem
     });
 });

@@ -3,11 +3,9 @@ const express = require('express');
 const router = express.Router();
 
 const { 
-    register, login, myAccount, refreshToken, 
-    logout, changePassword, updateAccount,
-    forgotPassword, resetPassword, verifyEmail,
+    register, login, refreshToken, 
+    logout, forgotPassword, resetPassword, verifyEmail,
 } = require('../controllers/auth');
-const { protect } = require('../middlewares/auth');
 const facebookRoute = require('./fb');
 
 router
@@ -15,10 +13,7 @@ router
     .get('/register/verify/:token', verifyEmail)
     .post('/login', login)
     .get('/logout', logout)
-    .get('/my-account', protect, myAccount)
     .post('/token', refreshToken)
-    .put('/change-password', protect, changePassword)
-    .put('/update-account', protect, updateAccount)
     .post('/forgot-password', forgotPassword)
     .put('/reset-password/:token', resetPassword)
 

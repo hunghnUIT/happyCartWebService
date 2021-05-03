@@ -2,10 +2,6 @@ const User = require('../models/User');
 const asyncHandler = require('../middlewares/asyncHandler');
 const ErrorResponse = require('../utils/errorResponse');
 const jwt = require('jsonwebtoken');
-const TrackedItemTiki = require('../models/TrackedItemTiki');
-const TrackedItemShopee = require('../models/TrackedItemShopee');
-const ItemTiki = require('../models/ItemTiki');
-const ItemShopee = require('../models/ItemShopee');
 const sendMail = require('../utils/sendEmail')
 const crypto = require('crypto');
 
@@ -145,47 +141,6 @@ exports.login = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * View my account
- * @route   GET /api/v1/auth/my-account?include=item
- * @access  private
- */
-exports.myAccount = asyncHandler(async (req, res, next) => {
-    // NOTE: Look like query user and populate tracked items is faster than query tracked items and user.
-    const include = req.query.include || "";
-    // const response = { success: true };
-    let user;
-    if (include.includes('item')) {
-        // response.trackedItemsTiki = await TrackedItemTiki.find({user: req.user._id}).populate({path: 'item', model: ItemTiki});
-        // response.trackedItemsShopee = await TrackedItemShopee.find({user: req.user._id}).populate({path: 'item', model: ItemShopee});
-        user = await User.findById(req.user._id)
-            .populate({
-                path: 'TrackedItemsTiki',
-                model: TrackedItemTiki,
-                populate: {
-                    path: 'item',
-                    model: ItemTiki,
-                }
-            })
-            .populate({
-                path: 'TrackedItemsShopee',
-                model: TrackedItemShopee,
-                populate: {
-                    path: 'item',
-                    model: ItemShopee,
-                }
-            });
-        // response.user = user
-    }
-    else
-        user = await User.findById(req.user._id);
-
-    return res.status(200).json({
-        success: true,
-        user: user,
-    })
-});
-
-/**
  * Refresh access token 
  * @route   POST /api/v1/auth/token
  * @access  private
@@ -238,56 +193,6 @@ const sendTokenResponse = (user, statusCode, res, refToken) => {
             refreshToken: refreshToken,
         })
 }
-
-/**
- * Change password for user 
- * @route   PUT /api/v1/auth/change-password
- * @access  private
- */
-exports.changePassword = asyncHandler(async (req, res, next) => {
-    const { currentPassword, newPassword } = req.body;
-
-    let user = await User.findById(req.user.id).select('+password');
-    let checkPassword = await user.matchPassword(currentPassword.toString());
-
-    if (!checkPassword) {
-        return next(new ErrorResponse("Incorrect current password", 401))
-    }
-
-    /** NOTE: We have to use this way but findByIdAndUpdate, unless sendTokenResponse below will raise error
-     * Description error:
-     * - findByIdAndUpdate return some kind of object, but it's not able to call the 
-     * getSignedJwtToken function which is inside UserSchema. Maybe the object return is 
-     * just the document so it can't call the function.
-     * - findById return also some kind of object but it able to call the function.
-     */
-    user.password = newPassword;
-    user = await user.save();
-
-    sendTokenResponse(user, 200, res);
-});
-
-/**
- * Update detail account
- * @route   PUT /api/v1/auth/update-account
- * @access  private
- */
-exports.updateAccount = asyncHandler(async (req, res, next) => {
-    // Only allow to edit fields bellow.
-    const fieldsToUpdate = {
-        name: req.body.name,
-        email: req.body.email
-    }
-
-    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-        new: true,
-        runValidators: true
-    });
-    return res.status(200).json({
-        success: true,
-        data: user
-    });
-});
 
 /**
  * Logout user 

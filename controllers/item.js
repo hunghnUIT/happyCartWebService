@@ -111,45 +111,6 @@ exports.getReviewInfo = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * Get tracking items by user 
- * @route   GET /api/v1/items/tracking-items?platform='tiki'||'shopee'||'all'
- * @access  private/protected
- */
-exports.getTrackingItems = asyncHandler(async (req, res, next) => {
-    const platform = req.query.platform || "all";
-    const response = { success: true };
-
-    if (platform === 'tiki' || platform === 'all')
-        response.trackingItemsTiki = await TrackedItemTiki.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' });
-    if (platform === 'shopee' || platform === 'all')
-        response.trackingItemsShopee = await TrackedItemShopee.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemShopee, select: '-_id -expired -__v' });
-
-    return res.status(200).json(response);
-
-})
-
-/**
- * Tracking a new item  
- * @route   POST /api/v1/items/tracking-items/:itemId
- * @access  private/protected
- */
-exports.trackingNewItem = asyncHandler(async (req, res, next) => {
-    const platform = req.body.platform;
-    req.body.user = req.user;
-
-    let trackedItem;
-    if (platform === 'tiki')
-        trackedItem = await TrackedItemTiki.create(req.body);
-    else if (platform === 'shopee')
-        trackedItem = await TrackedItemShopee.create(req.body);
-
-    return res.status(200).json({
-        success: true,
-        data: trackedItem
-    });
-})
-
-/**
  * Show products that most decreased in price.
  * @route   GET /api/v1/items/most-decreasing-item?platform=...&category=...&page=1
  * @access  public

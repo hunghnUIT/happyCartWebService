@@ -16,6 +16,7 @@ const adminRoute = require('./routes/admin');
 const authRoute = require('./routes/auth');
 const itemRoute = require('./routes/item');
 const categoryRoute = require('./routes/category');
+const userRoute = require('./routes/user');
 
 const connectDB = require('./config/db');
 const initLoginFacebook = require('./config/fb');
@@ -70,6 +71,7 @@ app.use(passport.session());
 app.use("/api/v1/items/", itemRoute);
 app.use("/api/v1/admin/", adminRoute);
 app.use("/api/v1/auth/", authRoute);
+app.use("/api/v1/user/", userRoute);
 app.use("/api/v1/categories/", categoryRoute);
 
 // FIXME These lines below is temporary until I find some other way to do this, DELETE AS SOON AS POSSIBLE

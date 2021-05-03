@@ -138,6 +138,6 @@ UserSchema.methods.getVerifyEmailToken = function () {
     })
 };
 
-const myDB = mongoose.connection.useDb('SERVER');
+const myDB = mongoose.connection.useDb('USER');
 
 module.exports = myDB.model('User', UserSchema, 'Users');
