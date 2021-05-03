@@ -4,8 +4,6 @@ const { processUrl } = require('../helpers/helper');
 const { getItem, getSeller, getPrices, getReview, searchItemOnline } = require('../services/service');
 const ItemTiki = require("../models/ItemTiki");
 const ItemShopee = require("../models/ItemShopee");
-const TrackedItemTiki = require("../models/TrackedItemTiki");
-const TrackedItemShopee = require("../models/TrackedItemShopee");
 const StandardCategory = require("../models/StandardCategory");
 
 /**
@@ -24,7 +22,7 @@ exports.getInfoByItemUrl = asyncHandler(async (req, res, next) => {
     let dataFromUrl = processUrl(url);
 
     if (include.includes('item')) {
-        item = await getItem(dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform'], include.includes('image'));
+        item = await getItem(req.user, dataFromUrl['itemId'], dataFromUrl['sellerId'], dataFromUrl['platform'], include.includes('image'));
         response['item'] = item['_doc'] || item; // _doc is where the data actually is in case it queried from DB.
     }
     if (include.includes('price')) {
@@ -57,7 +55,7 @@ exports.getItemInfo = asyncHandler(async (req, res, next) => {
         return next(new ErrorResponse(`Invalid ${!id ? 'item id,' : ''} ${!platform ? 'platform' : ''}`, 400));
 
     if (include.includes('item')) {
-        response['item'] = await getItem(id, sellerId, platform, include.includes('image'));
+        response['item'] = await getItem(req.user, id, sellerId, platform, include.includes('image'));
     }
     if (include.includes('price')) {
         response['price'] = await getPrices(id, sellerId, platform);

@@ -10,12 +10,13 @@ const {
     mostDecreasingItem, 
     searchItemInDb
 } = require('../controllers/item');
+const { getUserIfLoggedIn, } = require('../middlewares/auth');
 
 router
     .get('/most-decreasing-item', mostDecreasingItem)
     .get('/search', searchItemInDb)
-    .get('/info', getInfoByItemUrl)
-    .get('/:itemId', getItemInfo)
+    .get('/info', getUserIfLoggedIn, getInfoByItemUrl)
+    .get('/:itemId', getUserIfLoggedIn, getItemInfo)
     .get('/seller/:sellerId', getSellerInfo)
     .get('/review/:itemId', getReviewInfo)
 

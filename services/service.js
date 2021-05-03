@@ -17,18 +17,34 @@ const { crawlItemShopee, crawlItemTiki, isToday } = require('../helpers/helper')
 const ErrorResponse = require('../utils/errorResponse');
 const { hgetallCache, hsetCache } = require('../helpers/cache');
 const { addItemToCrawlingList } = require('../services/item');
+const TrackedItemTiki = require('../models/TrackedItemTiki');
+const TrackedItemShopee = require('../models/TrackedItemShopee');
 
 /** 
  * Get data of item
+ * @param {Object} user user making request **if any**.
  * @param {Number} itemId id of item
  * @param {Number} sellerId id of item
  * @param {String} platform platform of item
  * @param {Boolean} getPreviewImages get preview images or not
  * @returns Promise Model Item
  */
-exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
+exports.getItem = async (user, itemId, sellerId, platform, getPreviewImages) => {
+    let isTracked = false;
+
+    if (user) {
+        let trackedItem;
+        if (platform.toLowerCase() === 'tiki')
+            trackedItem = await TrackedItemTiki.findOne({itemId: itemId, user: user.id});
+        else if (platform.toLowerCase() === 'shopee')
+            trackedItem = await TrackedItemShopee.findOne({itemId: itemId, user: user.id});
+        
+        isTracked = trackedItem ? true : false;
+    }
+
     const cacheItem = await hgetallCache(`item-${itemId}-${platform}${getPreviewImages ? '-include=image' : ''}`);
     if (cacheItem) {
+        cacheItem['isTracked'] = isTracked;
         return cacheItem;
     }
 
@@ -60,6 +76,12 @@ exports.getItem = async (itemId, sellerId, platform, getPreviewImages) => {
     }
 
     hsetCache(`item-${itemId}-${platform}${getPreviewImages ? '-include=image' : ''}`, item);
+
+    // No cache isTracked, it need to be realtime.
+    if (item['_doc'])
+        item['_doc']['isTracked'] = isTracked;
+    else 
+        item['isTracked'] = isTracked;
 
     return item;
 };

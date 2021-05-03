@@ -21,7 +21,7 @@ exports.protect = asyncHandler(async (req, res, next)=>{
     } catch (error) {
         return next(new ErrorResponse("Not authorize to access this route", 401));
     }
-})
+});
 
 exports.authorize = (...roles )=>{
     return (req, res, next)=>{
@@ -32,3 +32,22 @@ exports.authorize = (...roles )=>{
         next();
     };
 };
+
+exports.getUserIfLoggedIn = asyncHandler(async (req, res, next)=>{
+    let token = req.headers.authorization || req.cookies.accessToken;
+
+    if(token && token.startsWith("Bearer"))
+        token = token.replace("Bearer ", "");
+    
+    if (!token)
+        return next();
+
+    try {
+        const decoded = jwt.verify(token, process.env['JWT_SECRET']);
+        req.user = await User.findById(decoded.id);
+    } catch (error) {
+        // nothing here because this step is optional.
+    } finally {
+        next(); //IMPORTANT
+    }
+});
