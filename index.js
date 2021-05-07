@@ -60,10 +60,10 @@ if(process.env.NODE_ENV === 'development'){
     app.use(morgan('dev'));
 }
 // Session
-app.use(expressSession({ 
-    secret: process.env.SECRET, resave: false,
-    cookie: { httpOnly: true }, saveUninitialized: true,
-}));
+// app.use(expressSession({ 
+//     secret: process.env.SECRET, resave: false,
+//     cookie: { httpOnly: true }, saveUninitialized: true,
+// }));
 
 app.use(passport.initialize());
 app.use(passport.session());
