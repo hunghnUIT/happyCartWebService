@@ -25,9 +25,9 @@ exports.processUrl = (url) => {
 
     if (result['platform'] === 'shopee') {
         // E.g: https://shopee.vn/product/283338743/9918567180?smtt=0.174867900-1616510545.9 // Shop id first, then item id
+        if (url.indexOf('?') > -1) // Remove all params
+            url = url.slice(0, url.indexOf('?'));
         if (url.includes('shopee.vn/product/')) {
-            if (url.indexOf('?') > -1)
-                url = url.slice(0, url.indexOf('?'));
             let splittedUrlBySlash = url.split('/');
 
             result['itemId'] = Number(splittedUrlBySlash[splittedUrlBySlash.length - 1]);
