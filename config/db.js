@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const mongooseOption = {
     useNewUrlParser: true,
     useFindAndModify: false,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    useFindAndModify: false, // NEW
 };
 
 const DB = 'MONGO_URI_CLOUD';
