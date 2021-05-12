@@ -74,6 +74,10 @@ app.use("/api/v1/auth/", authRoute);
 app.use("/api/v1/user/", userRoute);
 app.use("/api/v1/categories/", categoryRoute);
 
+app.get('/', (req, res) => {
+    res.send('Hello from main service. :)');
+})
+
 // FIXME These lines below is temporary until I find some other way to do this, DELETE AS SOON AS POSSIBLE
 // Reset password with token must be in GUI because mail is sent.
 const { getUIResetPassword, postUIResetPassword } = require('./controllers/auth');
