@@ -174,3 +174,41 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
         data: trackedItem
     });
 });
+
+/**
+ * Un-track an item  
+ * @route   DELETE /api/v1/user/tracking-items/:itemId
+ * @access  private/protected
+ */
+exports.unTrackingItem = asyncHandler(async (req, res, next) => {
+    const itemId = req.params.itemId || "";
+    const platform = req.query.platform;
+    const user = req.user.id;
+
+    if (!itemId || !platform || !user)
+        return next(new ErrorResponse('Bad request.'))
+
+    let trackedItem;
+    if (platform === 'tiki')
+        trackedItem = await TrackedItemTiki.findOne({
+            itemId: itemId,
+            user: user,
+        });
+    else if (platform === 'shopee')
+        trackedItem = await TrackedItemShopee.findOne({
+            itemId: itemId,
+            user: user,
+        });
+
+    if (trackedItem) {
+        await trackedItem.remove().catch(err => next(new ErrorResponse(err.message)));
+    }
+    else {
+        return next(new ErrorResponse('Item not being tracked.'));
+    }
+
+    return res.status(200).json({
+        success: true,
+        data: {}
+    });
+});

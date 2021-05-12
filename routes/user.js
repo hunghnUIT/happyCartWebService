@@ -5,7 +5,7 @@ const router = express.Router();
 const { 
     myAccount, updateAccount, 
     changePassword, getTrackingItems, 
-    trackingNewItem,
+    trackingNewItem, unTrackingItem
 } = require('../controllers/user');
 const { protect } = require('../middlewares/auth');
 
@@ -17,5 +17,6 @@ router
     .put('/change-password', changePassword)
     .get('/tracking-items', getTrackingItems)
     .post('/tracking-items', trackingNewItem)
+    .delete('/tracking-items/:itemId', unTrackingItem)
 
 module.exports = router;
