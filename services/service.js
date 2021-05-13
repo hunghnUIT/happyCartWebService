@@ -31,7 +31,7 @@ const TrackedItemShopee = require('../models/TrackedItemShopee');
  */
 exports.getItem = async (user, itemId, sellerId, platform, getPreviewImages) => {
     let isTracked = false;
-    let notifyWhenPriceLt = null;
+    let notifyWhenPriceLt;
 
     if (user) {
         let trackedItem;
