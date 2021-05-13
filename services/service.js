@@ -56,21 +56,19 @@ exports.getItem = async (user, itemId, sellerId, platform, getPreviewImages) => 
     let item;
     if (platform.toLowerCase() === 'tiki') {
         // if client don't want to preview images, try looking for item in DB first, there's no preview img in there.
-        if (!getPreviewImages)
-            item = await ItemTiki.findOne({ id: itemId }, '-_id -__v -expired');
+        item = await ItemTiki.findOne({ id: itemId }, '-_id -__v -expired');
 
         // If item is not in DB or items on Tiki not having seller id or client want to preview images then crawl it.
-        if (!item || !item['_doc']?.['sellerId']) {
+        if (!item || !item['_doc']?.['sellerId'] || (getPreviewImages && !item['_doc']?.['images'])) {
             addItemToCrawlingList(itemId, sellerId, 'tiki'); // SellerId is undefined with Tiki
             item = await crawlItemTiki(itemId, getPreviewImages);
         }
     }
     else if (platform.toLowerCase() === 'shopee') {
-        if (!getPreviewImages)
-            item = await ItemShopee.findOne({ id: itemId }, '-_id -__v -expired');
+        item = await ItemShopee.findOne({ id: itemId }, '-_id -__v -expired');
 
         // If item is not in DB or client want to preview images then crawl it.
-        if (!item) {
+        if (!item || (getPreviewImages && !item['_doc']?.['images'])) {
             // Crawling Shopee item needs seller id too.
             if (!sellerId)
                 throw new ErrorResponse('Seller id params is required along with Shopee items');

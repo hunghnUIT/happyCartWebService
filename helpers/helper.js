@@ -80,7 +80,7 @@ exports.crawlItemTiki = async (itemId, getPreviewImages) => {
             platform: 'tiki',
         }
         if (getPreviewImages)
-            result['previewImages'] = response['images'];
+            result['images'] = response['images'].map(el => el.medium_url);
     }
     else
         return `Not found item id ${itemId}`;
@@ -121,7 +121,7 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
             platform: 'shopee',
         };
         if (getPreviewImages)
-            result['previewImages'] = item['images'].map((el) => URL_FILE_SERVER_SHOPEE + el);
+            result['images'] = item['images'].map((el) => URL_FILE_SERVER_SHOPEE + el);
     }
     else
         return `Not found item id ${itemId} belong to shop ${sellerId}`;
