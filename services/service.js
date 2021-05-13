@@ -31,6 +31,7 @@ const TrackedItemShopee = require('../models/TrackedItemShopee');
  */
 exports.getItem = async (user, itemId, sellerId, platform, getPreviewImages) => {
     let isTracked = false;
+    let notifyWhenPriceLt = null;
 
     if (user) {
         let trackedItem;
@@ -39,12 +40,16 @@ exports.getItem = async (user, itemId, sellerId, platform, getPreviewImages) => 
         else if (platform.toLowerCase() === 'shopee')
             trackedItem = await TrackedItemShopee.findOne({itemId: itemId, user: user.id});
         
-        isTracked = trackedItem ? true : false;
+        if (trackedItem) {
+            isTracked = true;
+            notifyWhenPriceLt = trackedItem.notifyWhenPriceLt;
+        }
     }
 
     const cacheItem = await hgetallCache(`item-${itemId}-${platform}${getPreviewImages ? '-include=image' : ''}`);
     if (cacheItem) {
         cacheItem['isTracked'] = isTracked;
+        cacheItem['notifyWhenPriceLt'] = notifyWhenPriceLt;
         return cacheItem;
     }
 
@@ -78,10 +83,14 @@ exports.getItem = async (user, itemId, sellerId, platform, getPreviewImages) => 
     hsetCache(`item-${itemId}-${platform}${getPreviewImages ? '-include=image' : ''}`, item);
 
     // No cache isTracked, it need to be realtime.
-    if (item['_doc'])
+    if (item['_doc']) {
         item['_doc']['isTracked'] = isTracked;
-    else 
+        item['_doc']['notifyWhenPriceLt'] = notifyWhenPriceLt;
+    }
+    else {
         item['isTracked'] = isTracked;
+        item['notifyWhenPriceLt'] = notifyWhenPriceLt;
+    }
 
     return item;
 };
