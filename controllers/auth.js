@@ -120,10 +120,12 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
  * @access  public
  */
 exports.login = asyncHandler(async (req, res, next) => {
-    const { email, password } = req.body;
+    const { email, password, deviceToken } = req.body;
 
     if (!email || !password)
         return next(new ErrorResponse('Please provide both email and password', 400));
+    if (!deviceToken)
+        return next(new ErrorResponse('No deviceToken provided', 400));
 
     const user = await User.findOne({ email: email }).select('+password');
 
@@ -136,6 +138,12 @@ exports.login = asyncHandler(async (req, res, next) => {
     const isMatch = await user.matchPassword(password);
     if (!isMatch)
         return next(new ErrorResponse('Invalid credentials', 401));
+
+    // Set info for firebase
+    user.isOnline = true;
+    user.deviceToken = deviceToken;
+    // No validate because password is in hash format, validating will raises error
+    await user.save({ validateBeforeSave: false }).catch(err => next(new ErrorResponse(err.message)));
 
     sendTokenResponse(user, 200, res);
 });
@@ -204,6 +212,11 @@ exports.logout = asyncHandler(async (req, res, next) => {
         expires: new Date(Date.now() + 10 * 1000),
         httpOnly: true
     };
+
+    await User.findByIdAndUpdate(req.user.id, {
+        deviceToken: null,
+        isOnline: false,
+    }).catch(err => next(new ErrorResponse(err.message)));
 
     res
         .cookie('accessToken', 'none', options)

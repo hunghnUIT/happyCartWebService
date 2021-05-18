@@ -60,6 +60,8 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    deviceToken: String,
+    isOnline: Boolean,
 },
 {
     toJSON: { virtuals: true},
