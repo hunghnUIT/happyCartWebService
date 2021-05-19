@@ -1,3 +1,5 @@
+const redis = require('../config/redis').getConnection();
+
 const User = require('../models/User');
 const asyncHandler = require('../middlewares/asyncHandler');
 const ErrorResponse = require('../utils/errorResponse');
@@ -5,6 +7,11 @@ const TrackedItemTiki = require('../models/TrackedItemTiki');
 const TrackedItemShopee = require('../models/TrackedItemShopee');
 const ItemTiki = require('../models/ItemTiki');
 const ItemShopee = require('../models/ItemShopee');
+const { 
+    REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME, 
+    REDIS_TRACKED_TIKI_ITEMS_HASH_NAME,
+    REDIS_REPRESENTATIVE_TRUE_VALUE,
+} = require('../settings');
 
 /**
  * Return tokens and status
@@ -152,7 +159,7 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
     req.body.update = new Date();
 
     let trackedItem;
-    if (platform === 'tiki')
+    if (platform === 'tiki') {
         trackedItem = await TrackedItemTiki.findOneAndUpdate({
             itemId: req.body.itemId,
             user: req.body.user,
@@ -160,7 +167,9 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
             upsert: true,
             new: true,
         });
-    else if (platform === 'shopee')
+        await redis.hset(REDIS_TRACKED_TIKI_ITEMS_HASH_NAME, req.body.itemId, REDIS_REPRESENTATIVE_TRUE_VALUE).catch((err)=> console.error(err));
+    }
+    else if (platform === 'shopee') {
         trackedItem = await TrackedItemShopee.findOneAndUpdate({
             itemId: req.body.itemId,
             user: req.body.user,
@@ -168,6 +177,8 @@ exports.trackingNewItem = asyncHandler(async (req, res, next) => {
             upsert: true,
             new: true,
         });
+        await redis.hset(REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME, req.body.itemId, REDIS_REPRESENTATIVE_TRUE_VALUE).catch((err)=> console.error(err));
+    }
 
     return res.status(200).json({
         success: true,
@@ -189,22 +200,26 @@ exports.unTrackingItem = asyncHandler(async (req, res, next) => {
         return next(new ErrorResponse('Bad request.'))
 
     let trackedItem;
-    if (platform === 'tiki')
+    if (platform === 'tiki') {
         trackedItem = await TrackedItemTiki.findOne({
             itemId: itemId,
             user: user,
         });
-    else if (platform === 'shopee')
+        await redis.hdel(REDIS_TRACKED_TIKI_ITEMS_HASH_NAME, `${itemId}`).catch((err)=> console.error(err));
+    }
+    else if (platform === 'shopee') {
         trackedItem = await TrackedItemShopee.findOne({
             itemId: itemId,
             user: user,
         });
+        await redis.hdel(REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME, `${itemId}`).catch((err)=> console.error(err));
+    }
 
     if (trackedItem) {
         await trackedItem.remove().catch(err => next(new ErrorResponse(err.message)));
     }
     else {
-        return next(new ErrorResponse('Item not being tracked.'));
+        return next(new ErrorResponse('Item not being tracked.', 404));
     }
 
     return res.status(200).json({

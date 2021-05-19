@@ -35,6 +35,13 @@ const EXPIRED_TIME_REDIS = 300; // 300s = 5 mins
 const URL_API_SEARCH_ITEM_SHOPEE = 'https://shopee.vn/api/v4/search/search_items?keyword={q}'; // Default limit = 10
 const URL_API_SEARCH_ITEM_TIKI = 'https://tiki.vn/api/v2/products?q={q}'; // Default limit = 10
 
+const HELPER_SERVICE_URL = 'http://localhost:5050';
+
+// To add tracked item to Redis
+const REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME = 'trackedItems-shopee';
+const REDIS_TRACKED_TIKI_ITEMS_HASH_NAME = 'trackedItems-tiki';
+const REDIS_REPRESENTATIVE_TRUE_VALUE = 1;
+
 module.exports = {
     JWT_EXPIRE,
     JWT_EXPIRE_FOR_REFRESH,
@@ -48,4 +55,8 @@ module.exports = {
     EXPIRED_TIME_REDIS,
     URL_API_SEARCH_ITEM_SHOPEE,
     URL_API_SEARCH_ITEM_TIKI,
+    HELPER_SERVICE_URL,
+    REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME,
+    REDIS_TRACKED_TIKI_ITEMS_HASH_NAME,
+    REDIS_REPRESENTATIVE_TRUE_VALUE
 }
