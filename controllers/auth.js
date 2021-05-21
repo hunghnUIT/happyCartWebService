@@ -125,8 +125,8 @@ exports.login = asyncHandler(async (req, res, next) => {
 
     if (!email || !password)
         return next(new ErrorResponse('Please provide both email and password', 400));
-    if (!deviceToken)
-        return next(new ErrorResponse('No deviceToken provided', 400));
+    // if (!deviceToken)
+    //     return next(new ErrorResponse('No deviceToken provided', 400));
 
     let user;
     if (!loginAsAdmin)
