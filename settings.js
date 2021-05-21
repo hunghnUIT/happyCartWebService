@@ -1,3 +1,9 @@
+const TIME_UNIT_TO_MS = {
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000,
+}
 const JWT_EXPIRE = '1h';
 const JWT_EXPIRE_FOR_REFRESH = '90d';
 const HEADERS_SHOPEE = {
@@ -43,6 +49,7 @@ const REDIS_TRACKED_TIKI_ITEMS_HASH_NAME = 'trackedItems-tiki';
 const REDIS_REPRESENTATIVE_TRUE_VALUE = 1;
 
 module.exports = {
+    TIME_UNIT_TO_MS,
     JWT_EXPIRE,
     JWT_EXPIRE_FOR_REFRESH,
     HEADERS_SHOPEE,

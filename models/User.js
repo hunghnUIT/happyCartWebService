@@ -106,6 +106,19 @@ UserSchema.methods.getAccessToken = function () {
     })
 }
 
+UserSchema.methods.getAccessTokenExpiredTime = function () {
+    const ttl = settings.JWT_EXPIRE;
+    let num = '';
+    let unit = '';
+    for (const c of ttl) {
+        if (Number.isInteger(Number(c)))
+            num += c;
+        else if (RegExp(/^\p{L}/,'u').test(c))
+            unit += c;
+    }
+    return new Date().getTime() + Number(num) * settings.TIME_UNIT_TO_MS[unit];
+}
+
 // Sign JWT and return 
 UserSchema.methods.getRefreshToken = function () {
     return jwt.sign({id: this._id} , process.env['JWT_SECRET_FOR_REFRESH'], {

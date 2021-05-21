@@ -116,18 +116,23 @@ exports.verifyEmail = asyncHandler(async (req, res, next) => {
 
 /**
  * Login
- * @route   POST /api/v1/auth/login
+ * @route   POST /api/v1/auth/login?asAdmin=true
  * @access  public
  */
 exports.login = asyncHandler(async (req, res, next) => {
     const { email, password, deviceToken } = req.body;
+    const loginAsAdmin = req.query.asAdmin === 'true' ? true : false;
 
     if (!email || !password)
         return next(new ErrorResponse('Please provide both email and password', 400));
     if (!deviceToken)
         return next(new ErrorResponse('No deviceToken provided', 400));
 
-    const user = await User.findOne({ email: email }).select('+password');
+    let user;
+    if (!loginAsAdmin)
+        user = await User.findOne({ email: email, isAdmin: false }).select('+password');
+    else
+        user = await User.findOne({ email: email, isAdmin: true }).select('+password');
 
     if (!user)
         return next(new ErrorResponse('Invalid credentials', 401));
@@ -179,10 +184,15 @@ exports.refreshToken = asyncHandler(async (req, res, next) => {
  * @param {Schema} user user logged in or registered
  * @param {Number} statusCode HTTP response code
  * @param {any} res for response purpose.
+ * @param {String} refToken if provided, refreshToken won't be re-create again.
+ * @param {String} include choose which field of **user** will be returned in json response too.
  */
-const sendTokenResponse = (user, statusCode, res, refToken) => {
+const sendTokenResponse = (user, statusCode, res, refToken, include) => {
+    const accessTokenExpiredAt = user.getAccessTokenExpiredTime();
     const accessToken = user.getAccessToken();
     const refreshToken = refToken || user.getRefreshToken();
+
+    const including = include ? include.split(',') : [];
 
     const options = {
         expired: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 60 * 60 * 1000), // 1h
@@ -192,14 +202,21 @@ const sendTokenResponse = (user, statusCode, res, refToken) => {
     if (process.env.NODE_ENV === 'production')
         options.secure = true;
 
+    let response = {
+        success: true,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        accessTokenExpiredAt: accessTokenExpiredAt,
+    }
+
+    for (const info of including){
+        response[info.trim()] = user[info.trim()];        
+    }
+
     res.status(statusCode)
         .cookie('accessToken', accessToken, options)
         .cookie('refreshToken', refreshToken, options)
-        .json({
-            success: true,
-            accessToken: accessToken,
-            refreshToken: refreshToken,
-        })
+        .json(response)
 }
 
 /**
