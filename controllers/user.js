@@ -175,7 +175,7 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
 
     // if ((platform === 'tiki' || platform === 'all') && skip < countMatchTiki) {
     if ((platform === 'tiki' || platform === 'all')) {
-        response.trackingItemsTiki = await TrackedItemTiki.find(filters).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' }).skip(skip).limit(actuallyLimit);
+        response.trackingItemsTiki = await TrackedItemTiki.find(filters).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' }).skip(skip).limit(actuallyLimit).sort({create: -1});
         // lackingNumberTiki = actuallyLimit - response.trackingItemsTiki.length;
     }
     // if ((platform === 'shopee' || platform === 'all') && skip < countMatchShopee) {
