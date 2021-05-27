@@ -159,7 +159,6 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
         user: req.user._id, 
     }
 
-    /*
     // Get count for later so it need to be done first
     if (platform === 'tiki' || platform === 'all') {
         countMatchTiki = await TrackedItemTiki.countDocuments(filters);
@@ -172,7 +171,7 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
         numberItemTikiFilledIn = skip - countMatchShopee;
         numberItemTikiFilledIn = numberItemTikiFilledIn < 0 ? 0 : numberItemTikiFilledIn; // 
         total += countMatchShopee;
-    }*/
+    }
 
     // if ((platform === 'tiki' || platform === 'all') && skip < countMatchTiki) {
     if ((platform === 'tiki' || platform === 'all')) {
@@ -247,6 +246,8 @@ exports.getTrackingItems = asyncHandler(async (req, res, next) => {
             response.trackingItemsTiki = [...newResult];
         }
     }
+    
+    response.count = countMatchShopee + countMatchTiki; 
 
     return res.status(200).json(response);
 });
