@@ -137,13 +137,116 @@ exports.changePassword = asyncHandler(async (req, res, next) => {
  * @access  private/protected
  */
 exports.getTrackingItems = asyncHandler(async (req, res, next) => {
+    const limit = Math.min(Math.max(req.query.limit || 12, 6), 24); // Limit min: 6, max 24, default 12
+    const page = Math.max(req.query.page || 1, 1); //min = 1;
     const platform = req.query.platform || "all";
+    const actuallyLimit = platform === 'all' ? limit / 2 : limit;
     const response = { success: true };
+    const q = req.query.q || '';
+    const filter = req.query.filter || '';
 
-    if (platform === 'tiki' || platform === 'all')
-        response.trackingItemsTiki = await TrackedItemTiki.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' });
-    if (platform === 'shopee' || platform === 'all')
-        response.trackingItemsShopee = await TrackedItemShopee.find({ user: req.user._id }).select('-__v').populate({ path: 'item', model: ItemShopee, select: '-_id -expired -__v' });
+    // Pagination
+    const skip = (page - 1) * actuallyLimit;
+    let total = 0;
+    let countMatchShopee = 0;
+    let countMatchTiki = 0;
+    let lackingNumberShopee = actuallyLimit;
+    let lackingNumberTiki = actuallyLimit;
+    let numberItemTikiFilledIn = 0;
+    let numberItemShopeeFilledIn = 0;
+
+    const filters = {
+        user: req.user._id, 
+    }
+
+    /*
+    // Get count for later so it need to be done first
+    if (platform === 'tiki' || platform === 'all') {
+        countMatchTiki = await TrackedItemTiki.countDocuments(filters);
+        numberItemShopeeFilledIn = skip - countMatchTiki;
+        numberItemShopeeFilledIn = numberItemShopeeFilledIn < 0 ? 0 : numberItemShopeeFilledIn; // 
+        total += countMatchTiki;
+    }
+    if (platform === 'shopee' || platform === 'all') {
+        countMatchShopee = await TrackedItemShopee.countDocuments(filters);
+        numberItemTikiFilledIn = skip - countMatchShopee;
+        numberItemTikiFilledIn = numberItemTikiFilledIn < 0 ? 0 : numberItemTikiFilledIn; // 
+        total += countMatchShopee;
+    }*/
+
+    // if ((platform === 'tiki' || platform === 'all') && skip < countMatchTiki) {
+    if ((platform === 'tiki' || platform === 'all')) {
+        response.trackingItemsTiki = await TrackedItemTiki.find(filters).select('-__v').populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' }).skip(skip).limit(actuallyLimit);
+        // lackingNumberTiki = actuallyLimit - response.trackingItemsTiki.length;
+    }
+    // if ((platform === 'shopee' || platform === 'all') && skip < countMatchShopee) {
+    if ((platform === 'shopee' || platform === 'all')) {
+        response.trackingItemsShopee = await TrackedItemShopee.find(filters).select('-__v').populate({ path: 'item', model: ItemShopee, select: '-_id -expired -__v' }).skip(skip).limit(actuallyLimit);
+        // lackingNumberShopee = actuallyLimit - response.trackingItemsShopee.length;
+    }
+
+    /*// If Shopee not enough item but still there are of Tiki
+    if (lackingNumberShopee && skip < countMatchTiki) {
+        response.trackingItemsTiki = response.trackingItemsTiki.concat(await TrackedItemTiki.find(filters).populate({ path: 'item', model: ItemTiki, select: '-_id -expired -__v' }).limit(lackingNumberShopee).skip(skip + actuallyLimit + numberItemTikiFilledIn));
+    }
+    // If Tiki not enough item but still there are of Shopee
+    if (lackingNumberTiki && skip < countMatchShopee) {
+        response.trackingItemsShopee = response.trackingItemsShopee.concat(await TrackedItemShopee.find(filters).populate({ path: 'item', model: ItemShopee, select: '-_id -expired -__v' }).limit(lackingNumberTiki).skip(skip + actuallyLimit + numberItemShopeeFilledIn));
+    }*/
+
+    // NOTE This is a dumb way due to populated items info. I have to admitted this. :((
+    if (q) {
+        if (response.trackingItemsShopee.length) {    
+            let newResult = [];
+            for (const el of response.trackingItemsShopee) {
+                let trackedItemInfo;
+                if (el?.$$populatedVirtuals?.item?._doc)
+                    trackedItemInfo = el?.$$populatedVirtuals?.item?._doc;
+
+                if (trackedItemInfo?.name && trackedItemInfo.name.toLowerCase().includes(q.toLowerCase()))
+                    newResult.push(el);
+            }
+            response.trackingItemsShopee = [...newResult];
+        }
+        if (response.trackingItemsTiki.length) {
+            let newResult = [];
+            for (const el of response.trackingItemsTiki) {
+                let trackedItemInfo;
+                if (el?.$$populatedVirtuals?.item?._doc)
+                    trackedItemInfo = el?.$$populatedVirtuals?.item?._doc;
+
+                if (trackedItemInfo?.name && trackedItemInfo.name.toLowerCase().includes(q.toLowerCase()))
+                    newResult.push(el);
+            }
+            response.trackingItemsTiki = [...newResult];
+        }
+    }
+    if (filter.includes('decreasedOnly')) {
+        if (response.trackingItemsShopee.length) {    
+            let newResult = [];
+            for (const el of response.trackingItemsShopee) {
+                let trackedItemInfo;
+                if (el?.$$populatedVirtuals?.item?._doc)
+                    trackedItemInfo = el?.$$populatedVirtuals?.item?._doc;
+
+                if (trackedItemInfo?.lastPriceChange && Number(trackedItemInfo.lastPriceChange) < 0)
+                    newResult.push(el);
+            }
+            response.trackingItemsShopee = [...newResult];
+        }
+        if (response.trackingItemsTiki.length) {
+            let newResult = [];
+            for (const el of response.trackingItemsTiki) {
+                let trackedItemInfo;
+                if (el?.$$populatedVirtuals?.item?._doc)
+                    trackedItemInfo = el?.$$populatedVirtuals?.item?._doc;
+
+                if (trackedItemInfo?.lastPriceChange && Number(trackedItemInfo.lastPriceChange) < 0)
+                    newResult.push(el);
+            }
+            response.trackingItemsTiki = [...newResult];
+        }
+    }
 
     return res.status(200).json(response);
 });
