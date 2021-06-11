@@ -4,10 +4,6 @@ const router = express.Router();
 
 const { getUser, getUsers, createUser, updateUser, deleteUser } = require('../controllers/admin');
 
-const { protect, authorize } = require('../middlewares/auth');
-
-router.use(protect);
-router.use(authorize('admin'));
 
 router
     .route('/')

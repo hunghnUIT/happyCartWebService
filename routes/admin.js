@@ -6,6 +6,11 @@ const router = express.Router();
 
 const { statistic } = require('../controllers/admin');
 
+const { protect, authorize } = require('../middlewares/auth');
+
+router.use(protect);
+router.use(authorize('admin'));
+
 router.use('/users', userRoute)
 
 router.get('/statistic', statistic)
