@@ -13,7 +13,7 @@ const crypto = require('crypto');
 exports.register = asyncHandler(async (req, res, next) => {
     const { name, email, password } = req.body;
 
-    const user = await User.findOne({email: email, isVerified: true});
+    const user = await User.findOne({email: email, isVerified: true, isAdmin: false});
 
     if (user) 
         return next(new ErrorResponse('User already exists', 422));

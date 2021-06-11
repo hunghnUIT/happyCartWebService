@@ -13,6 +13,6 @@ router.use(authorize('admin'));
 
 router.use('/users', userRoute)
 
-router.get('/statistic', statistic)
+router.get('/statistics', statistic)
 
 module.exports = router;

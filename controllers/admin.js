@@ -228,12 +228,22 @@ exports.statistic = asyncHandler(async (req, res, next) => {
 
             if (platform.includes('shopee') || platform === 'all') {
                 const logs = await LogShopee.find({...query, crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}`});
-                const result = logs.map(log => log._doc.data.executionTimeInMs)
+                const result = logs.map(log => {
+                    return {
+                        update: log._doc.update,
+                        executionTimeInMs: log._doc.data.executionTimeInMs,
+                    }
+                })
                 response.data.shopee = result;
             }
             if (platform.includes('tiki') || platform === 'all') {
                 const logs = await LogTiki.find({...query, crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}`});
-                const result = logs.map(log => log._doc.data.executionTimeInMs)
+                const result = logs.map(log => {
+                    return {
+                        update: log._doc.update,
+                        executionTimeInMs: log._doc.data.executionTimeInMs,
+                    }
+                })
                 response.data.tiki = result;
             }
             break;
