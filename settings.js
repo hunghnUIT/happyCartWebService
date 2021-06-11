@@ -48,6 +48,10 @@ const REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME = 'trackedItems-shopee';
 const REDIS_TRACKED_TIKI_ITEMS_HASH_NAME = 'trackedItems-tiki';
 const REDIS_REPRESENTATIVE_TRUE_VALUE = 1;
 
+const timeBetweenCrawlingInHour = 8;
+const COMPLETE_CRAWLING_MESSAGE = 'Completed crawling process';
+const REPRESENTATIVE_CRAWLER_ID = 'Crawler00'
+
 module.exports = {
     TIME_UNIT_TO_MS,
     JWT_EXPIRE,
@@ -65,5 +69,8 @@ module.exports = {
     HELPER_SERVICE_URL,
     REDIS_TRACKED_SHOPEE_ITEMS_HASH_NAME,
     REDIS_TRACKED_TIKI_ITEMS_HASH_NAME,
-    REDIS_REPRESENTATIVE_TRUE_VALUE
+    REDIS_REPRESENTATIVE_TRUE_VALUE,
+    timeBetweenCrawlingInHour,
+    COMPLETE_CRAWLING_MESSAGE,
+    REPRESENTATIVE_CRAWLER_ID,
 }

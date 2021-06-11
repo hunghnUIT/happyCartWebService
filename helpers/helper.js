@@ -1,6 +1,9 @@
 const axios = require('axios');
 const { URL_API_ITEM_SHOPEE, URL_API_ITEM_TIKI } = require('../settings');
-const { HEADERS_SHOPEE, HEADERS_TIKI, URL_FILE_SERVER_SHOPEE } = require('../settings');
+const { 
+    HEADERS_SHOPEE, HEADERS_TIKI, 
+    URL_FILE_SERVER_SHOPEE, timeBetweenCrawlingInHour,
+} = require('../settings');
 
 /** 
  * round a float number to human readable
@@ -136,3 +139,16 @@ exports.crawlItemShopee = async (itemId, sellerId, getPreviewImages) => {
 exports.isToday = (date) => {
     return (new Date().toDateString() == new Date(date).toDateString());
 };
+
+exports.initTimingValue = () => {
+    let response = {};
+	const crawlTimeInDayCount = Math.floor(new Date().getHours()/timeBetweenCrawlingInHour);
+	const startTime = new Date().setHours(crawlTimeInDayCount*timeBetweenCrawlingInHour,0,0,0);
+	response.startTime = startTime;
+	response.expiredTime = startTime + (timeBetweenCrawlingInHour*60*60*1000) - 1; // Minus 1ms for felling guaranteed
+
+	const start = new Date().setHours(0,00,00,000);
+	response.startOfDay = start;
+	response.endOfDay = start + 86400000; // End=start+24hrs.
+    return response;
+}
