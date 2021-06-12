@@ -13,7 +13,7 @@ const CategoryTiki = require('../models/CategoryTiki');
 const CategoryShopee = require('../models/CategoryShopee');
 
 
-const { COMPLETE_CRAWLING_MESSAGE, REPRESENTATIVE_CRAWLER_ID } = require('../settings');
+const { COMPLETE_CRAWLING_MESSAGE, REPRESENTATIVE_CRAWLER_ID, ALTERNATIVE_CRAWLER_ID } = require('../settings');
 
 /**
  * @description Get a user by id
@@ -262,13 +262,27 @@ exports.statistic = asyncHandler(async (req, res, next) => {
                 response.data.shopee = result;
             }
             if (platform.includes('tiki') || platform === 'all') {
-                const logs = await LogTiki.find({...query, crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}`});
-                const result = logs.map(log => {
+                const logs = await LogTiki.find({...query, crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}`}).sort({update: -1});
+                let result = logs.map(log => {
                     return {
                         update: log._doc.update,
                         executionTimeInMs: log._doc.data.executionTimeInMs,
                     }
                 })
+
+                // This is also a dumb way to do solve problem. Can do anything else because sometimes crawler tiki is down causing lacking data.
+                // So I will fake a few data from tikiCrawler01. 
+                const dataShopeeLength = response.data?.shopee?.length || 0;
+                if (dataShopeeLength && result.length < dataShopeeLength) {
+                    const addition = await LogTiki.find({...query, crawler: `tiki${ALTERNATIVE_CRAWLER_ID}`}).limit(dataShopeeLength - result.length).sort({update: -1});
+                    result = result.concat(addition.map(log => {
+                        return {
+                            update: log._doc.update,
+                            executionTimeInMs: log._doc.data.executionTimeInMs,
+                        }
+                    }))
+                }
+
                 response.data.tiki = result;
             }
             break;
