@@ -156,19 +156,42 @@ exports.statistic = asyncHandler(async (req, res, next) => {
             if (platform.includes('shopee') || platform === 'all') {
                 const totalShopee = await ItemShopee.countDocuments();
                 const countExpiredShopee = await ItemShopee.countDocuments(query);
+
+                let executionTimeInMs;
+                if (countExpiredShopee === 0) {
+                    const latestLog = await LogShopee.findOne({ 
+                        "data.message": COMPLETE_CRAWLING_MESSAGE,
+                        crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}`
+                    }).sort({update: -1});
+                    executionTimeInMs = latestLog?._doc.data?.executionTimeInMs || -1;
+                }
+
                 response.data.shopee = {
                     total: totalShopee,
                     expired: countExpiredShopee, 
                     updated: totalShopee - countExpiredShopee,
+                    executionTimeInMs,
                 }
             }
+
             if (platform.includes('tiki') || platform === 'all') {
                 const totalTiki = await ItemTiki.countDocuments();
                 const countExpiredTiki = await ItemTiki.countDocuments(query);
+
+                let executionTimeInMs;
+                if (countExpiredTiki === 0) {
+                    const latestLog = await LogTiki.findOne({ 
+                        "data.message": COMPLETE_CRAWLING_MESSAGE,
+                        crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}`
+                    }).sort({update: -1});
+                    executionTimeInMs = latestLog?._doc.data?.executionTimeInMs || -1;
+                }
+
                 response.data.tiki = {
                     total: totalTiki,
                     expired: countExpiredTiki,
                     updated: totalTiki - countExpiredTiki,
+                    executionTimeInMs,
                 }
             }
             break;

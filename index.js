@@ -1,3 +1,5 @@
+require('events').EventEmitter.defaultMaxListeners = 15;
+
 const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
