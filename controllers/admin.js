@@ -105,7 +105,9 @@ exports.statistic = asyncHandler(async (req, res, next) => {
     switch (type) {
         case 'user': {
             // Count users
-            response.data = await User.countDocuments();
+            response.data = {
+                total: await User.countDocuments()
+            };
             break;
         }
         case 'tracked-item': {
