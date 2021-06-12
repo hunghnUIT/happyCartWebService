@@ -252,7 +252,7 @@ exports.statistic = asyncHandler(async (req, res, next) => {
             };
 
             if (platform.includes('shopee') || platform === 'all') {
-                const logs = await LogShopee.find({...query, crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}`});
+                const logs = await LogShopee.find({...query, crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}`}).sort({update: -1});
                 const result = logs.map(log => {
                     return {
                         update: log._doc.update,
