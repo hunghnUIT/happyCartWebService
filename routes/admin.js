@@ -1,6 +1,7 @@
 const express = require('express');
 
 const userRoute = require('./admin.user');
+const configRoute = require('./admin.config');
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ router.use(protect);
 router.use(authorize('admin'));
 
 router.use('/users', userRoute)
+router.use('/configs', configRoute)
 
 router.get('/statistics', statistic)
 

@@ -11,6 +11,7 @@ const ItemTiki = require('../models/ItemTiki');
 const User = require('../models/User');
 const CategoryTiki = require('../models/CategoryTiki');
 const CategoryShopee = require('../models/CategoryShopee');
+const Config = require('../models/Config');
 
 
 const { COMPLETE_CRAWLING_MESSAGE, REPRESENTATIVE_CRAWLER_ID, ALTERNATIVE_CRAWLER_ID } = require('../settings');
@@ -21,7 +22,7 @@ const { COMPLETE_CRAWLING_MESSAGE, REPRESENTATIVE_CRAWLER_ID, ALTERNATIVE_CRAWLE
  * @access private/admin
  * @returns Object represent for User Schema.
  */
-exports.getUser = asyncHandler(async function(req, res, next){
+exports.getUser = asyncHandler(async function (req, res, next) {
     const user = await User.findById(req.params.userId);
     return res.status(200).json({
         success: true,
@@ -50,8 +51,8 @@ exports.getUsers = asyncHandler(async (req, res, next) => {
  * @access private/admin
  */
 exports.createUser = asyncHandler(async (req, res, next) => {
-    if(req.body.isAdmin === 'true'){
-        if(req.body.secretToken !== process.env['SECRET_TOKEN'])
+    if (req.body.isAdmin === 'true') {
+        if (req.body.secretToken !== process.env['SECRET_TOKEN'])
             return next(new ErrorResponse("Invalid credentials for creating admin account.", 401))
     }
     const user = await User.create(req.body);
@@ -113,7 +114,7 @@ exports.statistic = asyncHandler(async (req, res, next) => {
         case 'tracked-item': {
             // How many item is being tracked by users
             const countTiki = await TrackedItemTiki.countDocuments();
-            const countShopee = await TrackedItemShopee.countDocuments(); 
+            const countShopee = await TrackedItemShopee.countDocuments();
             response.data = {
                 total: countTiki + countShopee,
                 tiki: countTiki,
@@ -161,16 +162,16 @@ exports.statistic = asyncHandler(async (req, res, next) => {
 
                 let executionTimeInMs;
                 if (countExpiredShopee === 0) {
-                    const latestLog = await LogShopee.findOne({ 
+                    const latestLog = await LogShopee.findOne({
                         "data.message": COMPLETE_CRAWLING_MESSAGE,
                         crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}`
-                    }).sort({update: -1});
+                    }).sort({ update: -1 });
                     executionTimeInMs = latestLog?._doc.data?.executionTimeInMs || -1;
                 }
 
                 response.data.shopee = {
                     total: totalShopee,
-                    expired: countExpiredShopee, 
+                    expired: countExpiredShopee,
                     updated: totalShopee - countExpiredShopee,
                     executionTimeInMs,
                 }
@@ -182,10 +183,10 @@ exports.statistic = asyncHandler(async (req, res, next) => {
 
                 let executionTimeInMs;
                 if (countExpiredTiki === 0) {
-                    const latestLog = await LogTiki.findOne({ 
+                    const latestLog = await LogTiki.findOne({
                         "data.message": COMPLETE_CRAWLING_MESSAGE,
                         crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}`
-                    }).sort({update: -1});
+                    }).sort({ update: -1 });
                     executionTimeInMs = latestLog?._doc.data?.executionTimeInMs || -1;
                 }
 
@@ -208,7 +209,7 @@ exports.statistic = asyncHandler(async (req, res, next) => {
             let countTiki = 0;
 
             if (platform.includes('shopee') || platform === 'all') {
-                countShopee = await ItemShopee.countDocuments(); 
+                countShopee = await ItemShopee.countDocuments();
                 response.data.shopee = countShopee;
             }
             if (platform.includes('tiki') || platform === 'all') {
@@ -228,7 +229,7 @@ exports.statistic = asyncHandler(async (req, res, next) => {
             let countTiki = 0;
 
             if (platform.includes('shopee') || platform === 'all') {
-                countShopee = await CategoryShopee.countDocuments(); 
+                countShopee = await CategoryShopee.countDocuments();
                 response.data.shopee = countShopee;
             }
             if (platform.includes('tiki') || platform === 'all') {
@@ -246,13 +247,13 @@ exports.statistic = asyncHandler(async (req, res, next) => {
             const start = Number(req.query.start) || 0;
             const end = Number(req.query.end) || new Date().getTime();
 
-            const query = { 
+            const query = {
                 update: { $gte: start, $lte: end },
                 "data.message": COMPLETE_CRAWLING_MESSAGE,
             };
 
             if (platform.includes('shopee') || platform === 'all') {
-                const logs = await LogShopee.find({...query, crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}`}).sort({update: -1});
+                const logs = await LogShopee.find({ ...query, crawler: `shopee${REPRESENTATIVE_CRAWLER_ID}` }).sort({ update: -1 });
                 const result = logs.map(log => {
                     return {
                         update: log._doc.update,
@@ -262,7 +263,7 @@ exports.statistic = asyncHandler(async (req, res, next) => {
                 response.data.shopee = result;
             }
             if (platform.includes('tiki') || platform === 'all') {
-                const logs = await LogTiki.find({...query, crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}`}).sort({update: -1});
+                const logs = await LogTiki.find({ ...query, crawler: `tiki${REPRESENTATIVE_CRAWLER_ID}` }).sort({ update: -1 });
                 let result = logs.map(log => {
                     return {
                         update: log._doc.update,
@@ -274,7 +275,7 @@ exports.statistic = asyncHandler(async (req, res, next) => {
                 // So I will fake a few data from tikiCrawler01. 
                 const dataShopeeLength = response.data?.shopee?.length || 0;
                 if (dataShopeeLength && result.length < dataShopeeLength) {
-                    const addition = await LogTiki.find({...query, crawler: `tiki${ALTERNATIVE_CRAWLER_ID}`}).limit(dataShopeeLength - result.length).sort({update: -1});
+                    const addition = await LogTiki.find({ ...query, crawler: `tiki${ALTERNATIVE_CRAWLER_ID}` }).limit(dataShopeeLength - result.length).sort({ update: -1 });
                     result = result.concat(addition.map(log => {
                         return {
                             update: log._doc.update,
@@ -292,4 +293,76 @@ exports.statistic = asyncHandler(async (req, res, next) => {
     }
 
     return res.status(200).json(response);
+});
+
+
+/**
+ * @description Create a new config
+ * @route POST /api/v1/admin/configs
+ * @access private/admin
+ */
+exports.createConfig = asyncHandler(async (req, res, next) => {
+    const config = await Config.create(req.body);
+    return res.status(201).json({
+        success: true,
+        data: config,
+    });
+});
+
+/**
+ * @description Get a config by name
+ * @route GET /api/v1/admin/configs/:configId
+ * @access private/admin
+ * @returns Object represent for Config Schema.
+ */
+exports.getConfig = asyncHandler(async function (req, res, next) {
+    const config = await Config.findById(req.params.configId);
+    return res.status(200).json({
+        success: true,
+        data: config,
+    })
+});
+
+/**
+ * @description Get all configs
+ * @route GET /api/v1/admin/configs
+ * @access private/admin
+ * @returns {Array} represent for list of configs.
+ */
+exports.getConfigs = asyncHandler(async (req, res, next) => {
+    const configs = await Config.find();
+    return res.status(200).json({
+        success: true,
+        count: configs.length,
+        data: configs
+    });
+});
+
+/**
+ * @description Update a config
+ * @route PUT /api/v1/admin/configs/:configId
+ * @access private/admin
+ */
+exports.updateConfig = asyncHandler(async (req, res, next) => {
+    const config = await Config.findByIdAndUpdate(req.params.configId, req.body, {
+        new: true,
+        runValidators: true
+    });
+    return res.status(200).json({
+        success: true,
+        data: config,
+    });
+});
+
+/**
+ * @description delete a config
+ * @route DELETE /api/users/configs/:configId
+ * @access private/admin
+ */
+exports.deleteConfig = asyncHandler(async (req, res, next) => {
+    await Config.findByIdAndDelete(req.params.configId);
+    return res.status(200).json({
+        success: true,
+        data: {}
+    });
 });
