@@ -14,7 +14,10 @@ const CategoryShopee = require('../models/CategoryShopee');
 const Config = require('../models/Config');
 
 
-const { COMPLETE_CRAWLING_MESSAGE, REPRESENTATIVE_CRAWLER_ID, ALTERNATIVE_CRAWLER_ID } = require('../settings');
+const { 
+    COMPLETE_CRAWLING_MESSAGE, COMPLETE_CRAWLING_CATEGORY_MESSAGE,
+    REPRESENTATIVE_CRAWLER_ID, ALTERNATIVE_CRAWLER_ID 
+} = require('../settings');
 
 /**
  * @description Get a user by id
@@ -286,6 +289,17 @@ exports.statistic = asyncHandler(async (req, res, next) => {
 
                 response.data.tiki = result;
             }
+            break;
+        }
+        case 'crawled-category': {
+            // show 5 or 10 categories has just been finished crawling (info: name, time, total item)
+            let result = [];
+
+            result = result.concat(await LogShopee.find({ "data.message": {$regex : COMPLETE_CRAWLING_CATEGORY_MESSAGE, $options: 'i' }}).sort({update: -1}).limit(5));
+            result = result.concat(await LogTiki.find({ "data.message": {$regex : COMPLETE_CRAWLING_CATEGORY_MESSAGE, $options: 'i' }}).sort({update: -1}).limit(5));
+
+            response.data = result;            
+
             break;
         }
         default:

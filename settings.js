@@ -50,6 +50,7 @@ const REDIS_REPRESENTATIVE_TRUE_VALUE = 1;
 
 const timeBetweenCrawlingInHour = 8;
 const COMPLETE_CRAWLING_MESSAGE = 'Completed crawling process';
+const COMPLETE_CRAWLING_CATEGORY_MESSAGE = 'Completed crawling category';
 const REPRESENTATIVE_CRAWLER_ID = 'Crawler00'
 const ALTERNATIVE_CRAWLER_ID = 'Crawler01'
 
@@ -73,6 +74,7 @@ module.exports = {
     REDIS_REPRESENTATIVE_TRUE_VALUE,
     timeBetweenCrawlingInHour,
     COMPLETE_CRAWLING_MESSAGE,
+    COMPLETE_CRAWLING_CATEGORY_MESSAGE,
     REPRESENTATIVE_CRAWLER_ID,
     ALTERNATIVE_CRAWLER_ID,
 }

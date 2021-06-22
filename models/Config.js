@@ -21,7 +21,8 @@ const ConfigSchema =  new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['Cấu hình API Crawler', 'Cấu hình HTML Crawler'],
+        // Update June 22nd, 2021: This is no longer necessary, even make admin fell inconvenient.
+        // enum: ['Cấu hình API Crawler', 'Cấu hình HTML Crawler'],
         required: [true, 'Category of configuration is required.'],
     },
     type: {
