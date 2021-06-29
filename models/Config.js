@@ -25,6 +25,9 @@ const ConfigSchema =  new mongoose.Schema({
         // enum: ['Cấu hình API Crawler', 'Cấu hình HTML Crawler'],
         required: [true, 'Category of configuration is required.'],
     },
+    subCategory: {
+        type: String,
+    },
     type: {
         type: String,
         enum: ['text', 'boolean', ], // Number will using type=text
