@@ -1,3 +1,5 @@
+const axios = require('axios').default;
+
 const { initTimingValue } = require('../helpers/helper');
 const asyncHandler = require('../middlewares/asyncHandler');
 const ErrorResponse = require('../utils/errorResponse');
@@ -12,6 +14,7 @@ const User = require('../models/User');
 const CategoryTiki = require('../models/CategoryTiki');
 const CategoryShopee = require('../models/CategoryShopee');
 const Config = require('../models/Config');
+const Crawler = require('../models/Crawler');
 
 
 const { 
@@ -370,7 +373,7 @@ exports.updateConfig = asyncHandler(async (req, res, next) => {
 
 /**
  * @description delete a config
- * @route DELETE /api/users/configs/:configId
+ * @route DELETE /api/v1/admin/configs/:configId
  * @access private/admin
  */
 exports.deleteConfig = asyncHandler(async (req, res, next) => {
@@ -379,4 +382,99 @@ exports.deleteConfig = asyncHandler(async (req, res, next) => {
         success: true,
         data: {}
     });
+});
+
+/**
+ * @description Get all crawlers
+ * @route GET /api/v1/admin/crawlers
+ * @access private/admin
+ */
+exports.getCrawlers = asyncHandler(async (req, res, next) => {
+    const crawlers = await Crawler.find().select('-url');
+    return res.status(200).json({
+        success: true,
+        data: crawlers,
+    })
+});
+
+/**
+ * @description Get ALL crawlers status
+ * @route GET /api/v1/admin/crawlers/status
+ * @access private/admin
+ */
+exports.getCrawlersStatus = asyncHandler(async (req, res, next) => {
+    const dataType = req.query.dataType || 'all';
+    const getDiskInfo = JSON.parse(req.query.getDiskInfo ?? true);
+
+    if (!(['static', 'dynamic', 'all'].includes(dataType)))
+        return next(new ErrorResponse('Invalid data type'));
+
+    let promises = [];
+    const crawlers = await Crawler.find();
+    for (const crawler of crawlers) {
+        promises.push(new Promise((resolve, reject) => {
+            const url =`${crawler._doc.url}/status?dataType=${dataType}&getDiskInfo=${getDiskInfo}`;
+            axios.get(url).then(resp => {
+                resolve({ success: true, crawler: crawler._doc.name, ...resp.data.data});
+            }).catch(err => {
+                if (err.response?.data) {
+                    // In failure response already had "success: false"
+                    reject({ ...err.response.data, crawler: crawler._doc.name });
+                }
+                else
+                    reject({
+                        success: false,
+                        message: err,
+                    });
+            });
+        }))
+    }
+
+    // const status = []
+    const status = (await Promise.allSettled(promises)).map(el => {
+        if (el.status === 'fulfilled')
+            return el.value;
+        else
+            return el.reason;
+    });
+
+    return res.status(200).json({
+        success: true,
+        data: status,
+    })
+});
+
+/**
+ * @description Get crawler status by crawler name
+ * @route GET /api/v1/admin/crawlers/status/:crawlerName
+ * @access private/admin
+ */
+exports.getCrawlerStatusByName = asyncHandler(async (req, res, next) => {
+    const crawlerName = req.params.crawlerName;
+    const dataType = req.query.dataType || 'all';
+    const getDiskInfo = JSON.parse(req.query.getDiskInfo ?? true);
+
+    if (!crawlerName) 
+        return next(new ErrorResponse('Crawler name is required'));
+
+    const crawler = await Crawler.findOne({name: crawlerName}).select('url name');
+    if (!crawler)
+        return next(new ErrorResponse(`Crawler ${crawlerName} not found, maybe it have never started.`));
+
+    if (!(['static', 'dynamic', 'all'].includes(dataType)))
+        return next(new ErrorResponse('Invalid data type'));
+
+    try {
+        const resp = await axios.get(`${crawler._doc.url}/status?dataType=${dataType}&getDiskInfo=${getDiskInfo}`);
+        return res.status(200).json({
+            success: true,
+            crawler: crawler._doc.name,
+            data: resp.data.data,
+        })
+    } catch (error) {
+        if (error.response?.data)
+            return next(new ErrorResponse(error.response.data.message));
+        else
+            return next(new ErrorResponse(error.message));
+    }
 });
