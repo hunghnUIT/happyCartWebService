@@ -478,3 +478,33 @@ exports.getCrawlerStatusByName = asyncHandler(async (req, res, next) => {
             return next(new ErrorResponse(error.message));
     }
 });
+
+/**
+ * @description Restart crawler by crawler name
+ * @route POST /api/v1/admin/crawlers/restart?crawlerName=...
+ * @access private/admin
+ */
+exports.restartCrawlerByName = asyncHandler(async (req, res, next) => {
+    const crawlerName = req.query.crawlerName;
+
+    if (!crawlerName) 
+        return next(new ErrorResponse('Crawler name is required'));
+    
+    const crawler = await Crawler.findOne({name: crawlerName}).select('url');
+    if (!crawler)
+        return next(new ErrorResponse(`Crawler ${crawlerName} not found, maybe it have never started.`));
+
+    try {
+        const resp = await axios.get(`${crawler._doc.url}/restart-crawler?confirm=yes`);
+        return res.status(200).json({
+            success: true,
+            crawler: crawler._doc.name,
+            data: resp.data,
+        })
+    } catch (error) {
+        if (error.response?.data)
+            return next(new ErrorResponse(error.response.data.message));
+        else
+            return next(new ErrorResponse(error.message));
+    }
+});
