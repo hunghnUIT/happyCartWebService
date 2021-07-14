@@ -424,7 +424,8 @@ exports.getCrawlersStatus = asyncHandler(async (req, res, next) => {
                 else
                     reject({
                         success: false,
-                        message: err,
+                        crawler: crawler._doc.name,
+                        message: err.message,
                     });
             });
         }))
@@ -472,10 +473,19 @@ exports.getCrawlerStatusByName = asyncHandler(async (req, res, next) => {
             data: resp.data.data,
         })
     } catch (error) {
-        if (error.response?.data)
-            return next(new ErrorResponse(error.response.data.message));
+        if (error.response?.data) {
+            return res.status(error.response?.status ?? 400).json({
+                success: false,
+                crawler: crawler._doc.name,
+                data: error.response.data.message,
+            })
+        }
         else
-            return next(new ErrorResponse(error.message));
+            return res.status(error.response?.status ?? 500).json({
+                success: false,
+                crawler: crawler._doc.name,
+                data: error.message,
+            })
     }
 });
 
