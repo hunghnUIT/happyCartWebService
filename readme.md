@@ -10,6 +10,7 @@
 - Extension:
 ![Extension demo](./public/demo/extension.png)
 <br>
+
 - User's tracked items management web view:
 ![Configs management demo](./public/demo/tracked-items.png)
 <br>
