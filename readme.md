@@ -9,17 +9,22 @@
 
 - Show relative information about item by receiving: *item ID, seller ID and item URL*.
 
-  :white_check_mark: Price of item at different time
+  :white_check_mark: Price changing history (detail to hours in a day)
 
   :white_check_mark: Preview images
 
   :white_check_mark: Information about the seller selling that item
 
-- Users are able to follow items and get notifications if there is changing in item's price.
+- Users are able to track items and get notifications if there is decreasing in item's price that meets user expectation.
 
   :white_check_mark: Choose an item to tracking it's price
 
-  :white_large_square: Get notifications if prices are changes
+  :white_check_mark: Managing tracked items
+
+  :white_check_mark: Send to users notifications if prices are changes via `Firebase` and Google Email 
+
+- Others:
+  :white_large_square: ~~Show relevant products~~ (completed, hosting in another server)
 
 
 
@@ -33,14 +38,14 @@
   :white_check_mark: Access token is renewable by using refresh token
 - User registration
 
-  :white_check_mark: Register as a "user"
+  :white_check_mark: Register as a `user`
 
-  :white_check_mark: Once registered, a token will be sent along with a cookie (accessToken = xxx)
+  :white_check_mark: Once registered, a token will be sent via email to verify email
 
   :white_check_mark: Passwords must be hashed
 - User login
 
-  :white_check_mark: User can login with phone and password
+  :white_check_mark: User can login with email and password or authenticated by Facebook
 
   :white_check_mark: Plain text password will compare with stored hashed password
 
@@ -53,22 +58,40 @@
   :white_check_mark: Route to get the currently logged in user (via token)
 - Password reset (forget password)
 
-  :white_large_square: User can request to reset password
+  :white_check_mark: User can request to reset password
 
-  :white_large_square: A hashed token will be emailed to the users registered email address
+  :white_check_mark: A hashed token will be emailed to the users registered email address
 
-  :white_large_square: A put request can be made to the generated url to reset password
+  :white_check_mark: A put request can be made to the generated url to reset password
 
-  :white_large_square: The token will expire after 10 minutes
+  :white_check_mark: The token will expire after 10 minutes
 - Update user info
 
-  :white_large_square: Authenticated user only
+  :white_check_mark: Authenticated user only
 
-  :white_large_square: Separate route to update password
-- User C.R.U.D
+  :white_check_mark: Separate route to update password
 
-  :white_check_mark: Admin only
-- Users can only be made admin by updating the database field manually
+### Admin & Management
+- Users
+
+  :white_check_mark: Users C.R.U.D
+
+  :white_check_mark: Users can only grant `admin` role by updating the database field manually or by updating by an admin
+
+- Crawlers
+  :white_check_mark: Crawler vCPU, RAM, network consumption, disk space information
+
+  :white_check_mark: Restart a specific crawler
+
+  :white_check_mark: Crawling progress information
+
+  :white_check_mark: Crawling time overview (via logs)
+
+  :white_check_mark: Update crawlers configs (Time between crawling, class name to extract data,...) 
+
+  :white_check_mark: Update stop-words for filtering of `relevant products` service
+
+
 
 ### Security
 - Encrypt passwords and reset tokens
@@ -77,3 +100,11 @@
 - Prevent cross site scripting - XSS
 - Protect against HTTP Params Pollution
 - Use cors to make API public (for now)
+
+### Overview Architecture
+![Overview Architecture](./public/demo/overview-architecture.png)
+
+***
+*This web service is a part of my thesis.*
+
+**Author: Hoàng Ngọc Hùng - VNU HCMC - UIT**
