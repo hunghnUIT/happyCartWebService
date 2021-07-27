@@ -1,6 +1,40 @@
 <!-- # Web service distributing crawled data from crawlers. -->
 <!-- :white_check_mark: -->
 
+### Demo
+
+*This is the representative repository so that these demo pictures below are nearly every features of the application*
+<details>
+  <summary>Show demo pictures</summary>
+
+- Extension:
+![Extension demo](./public/demo/extension.png)
+<br>
+- User's tracked items management web view:
+![Configs management demo](./public/demo/tracked-items.png)
+<br>
+
+- Admin dashboard:
+![Dashboard demo](./public/demo/dashboard.png)
+<br>
+
+- Admin crawler management:
+![Crawlers management demo](./public/demo/crawler.png)
+<br>
+
+- Admin user management:
+![User management demo](./public/demo/user.png)
+<br>
+
+- Admin stop words management:
+![Stop words management demo](./public/demo/stopword.png)
+<br>
+
+- Admin configs management:
+![Configs management demo](./public/demo/config.png)
+
+</details>
+
 # Backend API Specifications
 
 ### Item & User Services
@@ -24,6 +58,7 @@
   :white_check_mark: Send to users notifications if prices are changes via `Firebase` and Google Email 
 
 - Others:
+
   :white_large_square: ~~Show relevant products~~ (completed, hosting in another server)
 
 
@@ -79,6 +114,7 @@
   :white_check_mark: Users can only grant `admin` role by updating the database field manually or by updating by an admin
 
 - Crawlers
+
   :white_check_mark: Crawler vCPU, RAM, network consumption, disk space information
 
   :white_check_mark: Restart a specific crawler
@@ -102,6 +138,8 @@
 - Use cors to make API public (for now)
 
 ### Overview Architecture
+(This web service is a part of `module server`)
+
 ![Overview Architecture](./public/demo/overview-architecture.png)
 
 ***
