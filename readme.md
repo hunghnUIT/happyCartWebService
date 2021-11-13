@@ -1,7 +1,7 @@
 <!-- # Web service distributing crawled data from crawlers. -->
 <!-- :white_check_mark: -->
 
-### Demo
+# Demo
 
 *This is the representative repository so that these demo pictures below are nearly every features of the application*
 <details>
@@ -138,7 +138,14 @@
 - Protect against HTTP Params Pollution
 - Use cors to make API public (for now)
 
-### Overview Architecture
+# Technologies Stack
+- *Crawler*: NodeJS, ExpressJS, Axios, CronJob, Python, Selenium, FastAPI
+- *Backend*: NodeJS, ExpressJS, Java Spring
+- *Frontend*: ReactJS, Chrome Extension (Web platform), Java Android (Mobile platform)
+- *Database*: MongoDB, MySQL, Redis
+- *Notification*: Firebase
+
+# Overview Architecture
 (This web service is a part of `module server`)
 
 ![Overview Architecture](./public/demo/overview-architecture.png)
